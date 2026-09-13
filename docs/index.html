@@ -1,0 +1,3507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DynoPrompt — Teleprompter for Mac, iPhone &amp; iPad</title>
+  <meta name="description" content="DynoPrompt is a free macOS teleprompter app for streamers, interviewers, and presenters. It highlights your script in real-time as you speak, displayed in a beautiful Dynamic Island overlay.">
+  <meta property="og:title" content="DynoPrompt — Live Teleprompter for macOS">
+  <meta property="og:description" content="A free macOS teleprompter that highlights your script in real-time as you speak. Perfect for live streams, interviews, presentations, and podcasts.">
+  <meta property="og:type" content="website">
+  <style>
+    @import url('https://fonts.cdnfonts.com/css/opendyslexic');
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0A0A0C;
+      --surface: #1C1C1E;
+      --surface2: #2A2A2C;
+      --text: #F5F5F7;
+      --text2: #86868B;
+      --text3: #48484A;
+      --accent1: #7C6AFF;
+      --accent2: #4F8BFF;
+      --radius: 20px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-glow {
+      position: fixed;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 900px;
+      background: radial-gradient(circle, rgba(124, 106, 255, 0.1) 0%, rgba(79, 139, 255, 0.05) 40%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+    }
+
+    .nav-leading {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo svg { width: 36px; height: 36px; }
+
+    .logo span {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent2);
+      background: rgba(79, 139, 255, 0.1);
+      border: 1px solid rgba(79, 139, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 0 40px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent2);
+      background: rgba(79, 139, 255, 0.08);
+      border: 1px solid rgba(79, 139, 255, 0.15);
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 7vw, 68px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: 19px;
+      color: var(--text2);
+      max-width: 580px;
+      margin: 0 auto 16px;
+      line-height: 1.7;
+    }
+
+    .hero .use-cases {
+      font-size: 15px;
+      color: var(--text3);
+      margin-bottom: 40px;
+    }
+
+    .hero .use-cases span {
+      color: var(--text2);
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 16px 36px;
+      border-radius: 14px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px rgba(124, 106, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(124, 106, 255, 0.4);
+    }
+
+    [hidden] { display: none !important; }
+
+    .dl-meta {
+      font-size: 13px;
+      color: var(--text3);
+    }
+
+    .download-requirements { margin-top: 12px; }
+
+    .hero-brew {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 9px 14px;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text3);
+    }
+
+    .hero-brew code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--accent2);
+      font-size: 12px;
+      user-select: all;
+    }
+
+    /* App icon showcase */
+    .icon-showcase {
+      display: flex;
+      justify-content: center;
+      padding: 50px 0 80px;
+    }
+
+    .icon-showcase svg {
+      width: 180px;
+      height: 180px;
+      filter: drop-shadow(0 20px 60px rgba(124, 106, 255, 0.25));
+    }
+
+    /* Tagline */
+    .tagline {
+      text-align: center;
+      padding: 0 0 80px;
+    }
+
+    .tagline p {
+      font-size: 17px;
+      color: var(--text2);
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* Features */
+    .features {
+      padding: 40px 0 80px;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .features .section-sub {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 48px;
+    }
+
+    .features-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .feat-item:nth-child(odd) {
+      border-right: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .feat-item:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+
+    .feat-dot {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: rgba(124, 106, 255, 0.08);
+      margin-top: 2px;
+    }
+
+    .feat-dot svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--accent2);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feat-text h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 3px;
+      letter-spacing: -0.01em;
+    }
+
+    .feat-text p {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    /* Use cases */
+    .use-case-section {
+      padding: 40px 0 80px;
+    }
+
+    .use-case-section h2 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .use-case-section .section-sub {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 48px;
+    }
+
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .use-case-item {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .use-case-item:hover { transform: translateY(-3px); }
+
+    .use-case-item .uc-icon {
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: rgba(124, 106, 255, 0.08);
+      margin-bottom: 12px;
+    }
+
+    .use-case-item .uc-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--accent2);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .use-case-item h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .use-case-item p {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    /* How it works */
+    .how-it-works {
+      padding: 40px 0 80px;
+    }
+
+    .how-it-works h2 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 48px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      counter-reset: step;
+    }
+
+    .step {
+      text-align: center;
+      counter-increment: step;
+    }
+
+    .step::before {
+      content: counter(step);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .step h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* Install note */
+    .install-note {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin: 0 auto 80px;
+      max-width: 640px;
+    }
+
+    .install-note h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .install-note p {
+      font-size: 14px;
+      color: var(--text2);
+      margin-bottom: 12px;
+    }
+
+    .install-note code {
+      display: block;
+      background: var(--bg);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      color: var(--accent2);
+      overflow-x: auto;
+    }
+
+    /* CTA */
+    .cta {
+      text-align: center;
+      padding: 40px 0 80px;
+    }
+
+    .cta h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .cta p {
+      color: var(--text2);
+      font-size: 16px;
+      margin-bottom: 28px;
+    }
+
+    /* Donate top bar */
+    .donate-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+      z-index: 2;
+    }
+
+    .donate-bar p {
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .donate-bar strong {
+      color: var(--text);
+    }
+
+    .donate-source-link {
+      color: var(--text);
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .btn-donate {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .btn-donate:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 32px 0;
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 13px;
+      color: var(--text3);
+    }
+
+    footer a {
+      color: var(--text2);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--text); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      padding: 16px 36px;
+      border-radius: 14px;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      background: var(--surface2);
+    }
+
+    nav .docs-link,
+    nav .github-link {
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      border-radius: 10px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    nav .docs-link {
+      padding: 0 2px;
+    }
+
+    nav .github-link {
+      justify-content: center;
+      padding: 0 8px;
+    }
+
+    nav .docs-link:hover {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    nav .github-link:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+    }
+
+    nav .docs-link:focus-visible,
+    nav .github-link:focus-visible,
+    nav .logo:focus-visible {
+      outline: 2px solid var(--accent2);
+      outline-offset: 3px;
+    }
+
+    nav .docs-link svg,
+    nav .github-link svg { width: 18px; height: 18px; }
+
+    /* Demo animation */
+    .demo {
+      padding: 20px 0 80px;
+      text-align: center;
+    }
+
+    .demo h2 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .demo .section-sub {
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 40px;
+    }
+
+    .screen-frame {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      aspect-ratio: 16 / 10;
+      margin: 0 auto;
+      background: linear-gradient(180deg, #1a1a1e 0%, #111113 100%);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+
+    /* Camera lens + green dot */
+    .demo-camera {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    .demo-camera .lens {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #3a3a3e 0%, #1a1a1c 60%, #0a0a0c 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 0.5px 1px rgba(255,255,255,0.1);
+    }
+
+    .demo-camera .green-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #32d74b;
+      box-shadow: 0 0 4px rgba(50, 215, 75, 0.6);
+      position: absolute;
+      top: 1.5px;
+      left: calc(100% + 5px);
+    }
+
+    /* Notch overlay - uses SVG shape for concave top corners */
+    .demo-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    .demo-notch svg.notch-shape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .demo-notch-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .demo-notch.expanded .demo-notch-content {
+      opacity: 1;
+      transition-delay: 0.3s;
+    }
+
+    .demo-words {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px 6px;
+      align-content: flex-start;
+      padding: 34px 24px 10px;
+      overflow: hidden;
+      position: relative;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    }
+
+    .demo-words-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px 6px;
+      transition: transform 0.3s ease-out;
+    }
+
+    .demo-words span {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,1);
+      transition: color 0.15s ease;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .demo-words span.highlighted {
+      color: rgba(255,255,255,0.3);
+    }
+
+    .demo-words span.current {
+      color: rgba(255,255,255,0.6);
+      text-decoration: underline;
+    }
+
+    .demo-words span.annotation {
+      font-style: italic;
+      color: rgba(255,255,255,0.2);
+    }
+
+    .demo-words span.annotation.highlighted {
+      color: rgba(255,255,255,0.5);
+    }
+
+    .demo-words span.annotation.current {
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Bottom toolbar */
+    .demo-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 24px 14px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .demo-waveform {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .demo-waveform .bar {
+      width: 3px;
+      border-radius: 1.5px;
+      background: rgba(255,255,255,0.15);
+      transition: height 0.08s ease-out;
+      min-height: 4px;
+    }
+
+    .demo-waveform .bar.lit {
+      background: rgba(255, 214, 10, 0.9);
+    }
+
+    .demo-spoken {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.45);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1;
+    }
+
+    .demo-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .demo-btn svg {
+      width: 10px;
+      height: 10px;
+      stroke: rgba(255,255,255,0.6);
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .demo-btn.mic svg {
+      stroke: none;
+      fill: #ffd60a;
+      opacity: 0.85;
+    }
+
+    .demo-done {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1;
+      padding-top: 16px;
+    }
+
+    .demo-done svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .demo-done span {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Fake desktop: Google Meet style */
+    .screen-desktop {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #202124;
+      position: relative;
+    }
+
+    .meet-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 28px 8px 8px;
+    }
+
+    .meet-tile {
+      background: #2d2e30;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .meet-tile .silhouette {
+      width: 50%;
+      height: 70%;
+      opacity: 0.25;
+    }
+
+    .meet-tile .silhouette circle { fill: rgba(255,255,255,0.6); }
+    .meet-tile .silhouette ellipse { fill: rgba(255,255,255,0.4); }
+
+    .meet-tile.self-tile { background: #1a3a2a; }
+    .meet-tile.self-tile .silhouette circle { fill: rgba(100,255,150,0.5); }
+    .meet-tile.self-tile .silhouette ellipse { fill: rgba(100,255,150,0.3); }
+
+    .meet-tile .tile-name {
+      position: absolute;
+      bottom: 4px;
+      left: 6px;
+      font-size: 7px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.5);
+      font-family: -apple-system, sans-serif;
+    }
+
+    .meet-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 6px 0;
+      flex-shrink: 0;
+    }
+
+    .meet-bar-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .meet-bar-btn svg {
+      width: 10px;
+      height: 10px;
+      stroke: rgba(255,255,255,0.6);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .meet-bar-btn.mic-on { background: #3c4043; }
+    .meet-bar-btn.cam-on { background: #3c4043; }
+    .meet-bar-btn.end-call { background: #ea4335; }
+
+    /* Scene switching */
+    .screen-desktop .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      pointer-events: none;
+    }
+
+    .screen-desktop .scene.active { opacity: 1; pointer-events: auto; }
+
+    /* Scene: Presentation (Meet screen-share) */
+    .scene-presentation {
+      background: #202124;
+      padding: 0;
+    }
+
+    .pres-layout {
+      position: absolute;
+      inset: 24px 0 28px 0;
+      display: flex;
+      gap: 4px;
+      padding: 0 6px;
+    }
+
+    /* Large shared screen area */
+    .pres-shared {
+      flex: 1;
+      background: #1a1a1e;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 14px;
+      gap: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pres-shared-title {
+      width: 50%;
+      height: 7px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .pres-shared-sub {
+      width: 30%;
+      height: 5px;
+      border-radius: 2px;
+      background: rgba(79,139,255,0.2);
+      margin-bottom: 4px;
+    }
+
+    .pres-shared-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .pres-shared-lines div {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .pres-shared-lines div:nth-child(1) { width: 90%; }
+    .pres-shared-lines div:nth-child(2) { width: 70%; }
+    .pres-shared-lines div:nth-child(3) { width: 80%; }
+
+    .pres-shared-chart {
+      margin-top: auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 36px;
+    }
+
+    .pres-shared-chart div {
+      flex: 1;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .pres-shared-chart div:nth-child(1) { height: 35%; background: rgba(66,133,244,0.3); }
+    .pres-shared-chart div:nth-child(2) { height: 60%; background: rgba(66,133,244,0.35); }
+    .pres-shared-chart div:nth-child(3) { height: 90%; background: rgba(66,133,244,0.45); }
+    .pres-shared-chart div:nth-child(4) { height: 50%; background: rgba(66,133,244,0.3); }
+    .pres-shared-chart div:nth-child(5) { height: 75%; background: rgba(66,133,244,0.4); }
+    .pres-shared-chart div:nth-child(6) { height: 45%; background: rgba(66,133,244,0.3); }
+    .pres-shared-chart div:nth-child(7) { height: 85%; background: rgba(52,168,83,0.35); }
+
+    .pres-shared-pie {
+      position: absolute;
+      bottom: 38px;
+      right: 14px;
+      width: 28px;
+      height: 28px;
+    }
+
+    .pres-shared-pie circle { fill: none; stroke-width: 6; opacity: 0.3; }
+
+    /* Small participant strip on right */
+    .pres-people {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 56px;
+      flex-shrink: 0;
+    }
+
+    .pres-person {
+      flex: 1;
+      background: #2d2e30;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .pres-person svg {
+      width: 50%;
+      height: 60%;
+      opacity: 0.25;
+    }
+
+    .pres-person svg circle { fill: rgba(255,255,255,0.6); }
+    .pres-person svg ellipse { fill: rgba(255,255,255,0.4); }
+
+    .pres-person.speaking { border: 1px solid rgba(66,133,244,0.5); }
+
+    .pres-person .pp-name {
+      position: absolute;
+      bottom: 2px;
+      left: 4px;
+      font-size: 5px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Meet bottom bar reused */
+    .pres-meet-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 4px 0;
+      background: #202124;
+    }
+
+    /* Scene: Recording / vertical video */
+    .scene-recording {
+      background: #1a1a1a;
+      justify-content: center;
+      align-items: center;
+      padding: 28px 0 8px;
+    }
+
+    .rec-viewfinder {
+      width: 55%;
+      flex: 1;
+      max-height: 85%;
+      background: #111;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rec-viewfinder svg {
+      width: 40%;
+      height: 50%;
+      opacity: 0.2;
+    }
+
+    .rec-viewfinder svg circle { fill: rgba(255,255,255,0.5); }
+    .rec-viewfinder svg ellipse { fill: rgba(255,255,255,0.35); }
+
+    .rec-dot {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff3b30;
+      box-shadow: 0 0 6px rgba(255, 59, 48, 0.6);
+      animation: recBlink 1.2s infinite;
+    }
+
+    @keyframes recBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .rec-time {
+      position: absolute;
+      top: 5px;
+      left: 18px;
+      font-size: 7px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      font-family: 'SF Mono', monospace;
+    }
+
+    .rec-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 6px 0;
+      flex-shrink: 0;
+    }
+
+    .rec-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rec-btn .rec-inner {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff3b30;
+    }
+
+    /* Sidecar iPad demo */
+    .sidecar-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      margin: 12px auto 0;
+    }
+
+    .sidecar-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      position: absolute;
+      z-index: 21;
+    }
+
+    .sidecar-label.visible { opacity: 1; }
+
+    .sidecar-label span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text2);
+    }
+
+    .sidecar-label .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #32d74b;
+      box-shadow: 0 0 6px rgba(50, 215, 75, 0.5);
+    }
+
+    #sidecarLabelIPad {
+      bottom: -50px;
+      right: -30px;
+    }
+
+    #sidecarLabelMac {
+      bottom: -24px;
+      left: 0;
+    }
+
+    .ipad-frame {
+      position: absolute;
+      bottom: -30px;
+      right: -30px;
+      width: 220px;
+      aspect-ratio: 4 / 3;
+      background: linear-gradient(180deg, #111113 0%, #0a0a0c 100%);
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      z-index: 20;
+    }
+
+    .ipad-frame.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .ipad-frame .home-bar {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.2);
+      z-index: 5;
+    }
+
+    .ipad-prompter {
+      padding: 24px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .ipad-prompter-words {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 5px;
+      align-content: flex-start;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 80%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 80%, transparent 100%);
+    }
+
+    .ipad-prompter-words-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 5px;
+      transition: transform 0.3s ease-out;
+    }
+
+    .ipad-prompter-words span {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,1);
+      transition: color 0.15s ease;
+    }
+
+    .ipad-prompter-words span.highlighted {
+      color: rgba(255,255,255,0.3);
+    }
+
+    .ipad-prompter-words span.current {
+      color: rgba(255,255,255,0.6);
+      text-decoration: underline;
+    }
+
+    .ipad-prompter-words span.annotation {
+      font-style: italic;
+      color: rgba(255,255,255,0.15);
+    }
+
+    .ipad-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-top: 8px;
+      flex-shrink: 0;
+    }
+
+    .ipad-toolbar .bar {
+      width: 2px;
+      height: 4px;
+      border-radius: 1px;
+      background: rgba(255,214,10,0.6);
+    }
+
+    .ipad-toolbar .ipad-mic {
+      width: 10px;
+      height: 10px;
+      margin-left: auto;
+    }
+
+    .ipad-done {
+      display: none;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .ipad-done svg { width: 20px; height: 20px; }
+    .ipad-done span { font-size: 11px; font-weight: 700; color: #fff; }
+
+    /* Floating notch mode */
+    .demo-notch.floating {
+      position: absolute;
+      left: auto;
+      transform: none;
+      transition: top 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                  left 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                  right 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .demo-mode-label {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent2);
+      background: rgba(79, 139, 255, 0.1);
+      border: 1px solid rgba(79, 139, 255, 0.15);
+      padding: 3px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .demo-mode-label.visible { opacity: 1; }
+
+    /* Mirror mode label */
+    .mirror-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--accent2);
+      background: rgba(79, 139, 255, 0.15);
+      border: 1px solid rgba(79, 139, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .ipad-frame.mirror .mirror-badge { opacity: 1; }
+
+    .ipad-frame.mirror .ipad-prompter-words-inner {
+      transform-origin: center;
+    }
+
+    /* Guidance Modes */
+    .modes-section {
+      padding: 40px 0 80px;
+    }
+
+    .modes-section h2 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .modes-section .section-sub {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 48px;
+    }
+
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .mode-card {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      padding: 0;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .mode-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(124, 106, 255, 0.2);
+    }
+
+    .mode-visual {
+      height: 120px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .mode-visual-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px 24px;
+      width: 100%;
+    }
+
+    .mode-visual-line {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.08);
+      position: relative;
+    }
+
+    .mode-visual-line .fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    /* Word Tracking animation */
+    .mode-card.word-tracking .mode-visual-line:nth-child(1) .fill {
+      width: 100%;
+      background: rgba(124, 106, 255, 0.35);
+    }
+    .mode-card.word-tracking .mode-visual-line:nth-child(2) .fill {
+      width: 100%;
+      background: rgba(124, 106, 255, 0.35);
+    }
+    .mode-card.word-tracking .mode-visual-line:nth-child(3) .fill {
+      width: 0%;
+      background: rgba(124, 106, 255, 0.5);
+      animation: wordTrackFill 3s ease-in-out infinite;
+    }
+    .mode-card.word-tracking .mode-visual-line:nth-child(4) .fill,
+    .mode-card.word-tracking .mode-visual-line:nth-child(5) .fill {
+      width: 0%;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .mode-card.word-tracking .mode-visual-line:nth-child(3) {
+      position: relative;
+    }
+
+    .mode-card.word-tracking .mode-visual-line:nth-child(3)::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      width: 2px;
+      height: 10px;
+      background: #7C6AFF;
+      border-radius: 1px;
+      animation: wordTrackCursor 3s ease-in-out infinite;
+      box-shadow: 0 0 6px rgba(124, 106, 255, 0.6);
+    }
+
+    @keyframes wordTrackFill {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    @keyframes wordTrackCursor {
+      0% { left: 0%; }
+      100% { left: 100%; }
+    }
+
+    /* Classic animation — smooth endless scroll */
+    .mode-card.classic .mode-visual-lines {
+      animation: classicScroll 6s linear infinite;
+    }
+
+    .mode-card.classic .mode-visual-line .fill {
+      width: 100%;
+      background: rgba(79, 139, 255, 0.3);
+    }
+
+    @keyframes classicScroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-98px); }
+    }
+
+    /* Voice-Activated animation — speak/pause bursts, endless */
+    .mode-card.voice-activated .mode-visual-lines {
+      animation: voiceScroll 8s ease-in-out infinite;
+    }
+
+    .mode-card.voice-activated .mode-visual-line .fill {
+      width: 100%;
+      background: rgba(50, 215, 75, 0.3);
+    }
+
+    @keyframes voiceScroll {
+      0%   { transform: translateY(0); }
+      12%  { transform: translateY(-28px); }
+      20%  { transform: translateY(-28px); }
+      32%  { transform: translateY(-56px); }
+      45%  { transform: translateY(-56px); }
+      57%  { transform: translateY(-70px); }
+      68%  { transform: translateY(-70px); }
+      85%  { transform: translateY(-98px); }
+      100% { transform: translateY(-98px); }
+    }
+
+    .mode-visual-indicator {
+      position: absolute;
+      bottom: 8px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mode-visual-indicator .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+
+    .mode-visual-indicator span {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .mode-card.word-tracking .mode-visual-indicator .dot { background: #7C6AFF; box-shadow: 0 0 4px rgba(124,106,255,0.5); }
+    .mode-card.word-tracking .mode-visual-indicator span { color: rgba(124,106,255,0.7); }
+
+    .mode-card.classic .mode-visual-indicator .dot { background: #4F8BFF; box-shadow: 0 0 4px rgba(79,139,255,0.5); }
+    .mode-card.classic .mode-visual-indicator span { color: rgba(79,139,255,0.7); }
+
+    .mode-card.voice-activated .mode-visual-indicator .dot { background: #32d74b; box-shadow: 0 0 4px rgba(50,215,75,0.5); }
+    .mode-card.voice-activated .mode-visual-indicator span { color: rgba(50,215,75,0.7); }
+
+    .mode-voice-bars {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 10px;
+    }
+
+    .mode-voice-bars .bar {
+      width: 2px;
+      border-radius: 1px;
+      background: rgba(50, 215, 75, 0.5);
+      animation: voiceBar 0.4s ease-in-out infinite alternate;
+    }
+
+    .mode-voice-bars .bar:nth-child(1) { height: 4px; animation-delay: 0s; }
+    .mode-voice-bars .bar:nth-child(2) { height: 7px; animation-delay: 0.1s; }
+    .mode-voice-bars .bar:nth-child(3) { height: 10px; animation-delay: 0.05s; }
+    .mode-voice-bars .bar:nth-child(4) { height: 6px; animation-delay: 0.15s; }
+    .mode-voice-bars .bar:nth-child(5) { height: 3px; animation-delay: 0.08s; }
+
+    @keyframes voiceBar {
+      0% { transform: scaleY(0.5); }
+      100% { transform: scaleY(1.2); }
+    }
+
+    .mode-info {
+      padding: 24px;
+    }
+
+    .mode-info h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .mode-info .mode-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .mode-card.word-tracking .mode-info .mode-tag {
+      color: #7C6AFF;
+      background: rgba(124, 106, 255, 0.1);
+    }
+
+    .mode-card.classic .mode-info .mode-tag {
+      color: #4F8BFF;
+      background: rgba(79, 139, 255, 0.1);
+    }
+
+    .mode-card.voice-activated .mode-info .mode-tag {
+      color: #32d74b;
+      background: rgba(50, 215, 75, 0.1);
+    }
+
+    .mode-info p {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* Font Showcase */
+    .font-showcase {
+      padding: 40px 0 80px;
+    }
+
+    .font-showcase h2 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .font-showcase .section-sub {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 48px;
+    }
+
+    .font-showcase-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .fs-screen {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      aspect-ratio: 16 / 10;
+      background: linear-gradient(180deg, #1a1a1e 0%, #111113 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      box-shadow: 0 16px 60px rgba(0,0,0,0.5);
+    }
+
+    .fs-camera {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    .fs-camera .lens {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #3a3a3e 0%, #1a1a1c 60%, #0a0a0c 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .fs-desktop {
+      position: absolute;
+      inset: 0;
+      background: #202124;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fs-desktop-content {
+      width: 80%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 40px 0;
+    }
+
+    .fs-desktop-line {
+      height: 5px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .fs-desktop-line:nth-child(1) { width: 55%; }
+    .fs-desktop-line:nth-child(2) { width: 80%; }
+    .fs-desktop-line:nth-child(3) { width: 65%; }
+    .fs-desktop-line:nth-child(4) { width: 45%; }
+    .fs-desktop-line:nth-child(5) { width: 70%; }
+
+    .fs-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: 280px;
+      height: 140px;
+    }
+
+    .fs-notch svg.fs-notch-shape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .fs-notch-words {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px 5px;
+      padding: 22px 18px 8px;
+      height: 100%;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 75%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 75%, transparent 100%);
+    }
+
+    .fs-notch-words span {
+      font-weight: 600;
+      white-space: nowrap;
+      transition: font-size 0.35s cubic-bezier(0.4,0,0.2,1), line-height 0.35s cubic-bezier(0.4,0,0.2,1), color 0.35s ease;
+    }
+
+    .fs-notch-words span.fn-dim {
+      opacity: 0.3;
+    }
+
+    .fs-notch-words span.fn-current {
+      opacity: 0.6;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .fs-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text3);
+      transition: color 0.5s ease;
+      min-height: 20px;
+    }
+
+    .fs-a11y-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #32d74b;
+      background: rgba(50, 215, 75, 0.08);
+      border: 1px solid rgba(50, 215, 75, 0.15);
+      padding: 5px 12px;
+      border-radius: 8px;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      min-height: 28px;
+    }
+
+    .fs-a11y-tag.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fs-a11y-tag svg {
+      width: 13px;
+      height: 13px;
+      stroke: #32d74b;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .font-showcase-footer {
+      text-align: center;
+      margin-top: 36px;
+    }
+
+    .font-showcase-footer p {
+      font-size: 14px;
+      color: var(--text3);
+      line-height: 1.7;
+    }
+
+    .font-showcase-footer strong {
+      color: var(--text2);
+    }
+
+    /* Director Mode Section */
+    .director-section {
+      padding: 40px 0 80px;
+    }
+
+    .director-section h2 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .director-section .section-sub {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 48px;
+    }
+
+    .director-demo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .director-demo-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .director-demo-arrow svg {
+      width: 48px;
+      height: 24px;
+      stroke: var(--accent2);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.5;
+    }
+
+    .director-demo-arrow span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      white-space: nowrap;
+    }
+
+    /* Phone frame */
+    .director-phone {
+      width: 200px;
+      min-width: 200px;
+      aspect-ratio: 9 / 16;
+      background: linear-gradient(180deg, #1a1a1e 0%, #111113 100%);
+      border-radius: 28px;
+      border: 2px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .director-phone .phone-notch {
+      width: 60px;
+      height: 20px;
+      background: #000;
+      border-radius: 0 0 14px 14px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 5;
+    }
+
+    .director-phone .phone-home {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.2);
+      z-index: 5;
+    }
+
+    .director-phone-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 4px 10px 16px;
+      overflow: hidden;
+    }
+
+    .dp-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 0 6px;
+      flex-shrink: 0;
+    }
+
+    .dp-header .dp-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dp-header .dp-icon svg {
+      width: 8px;
+      height: 8px;
+      fill: #fff;
+      stroke: none;
+    }
+
+    .dp-header span {
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.02em;
+    }
+
+    .dp-editor {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .dp-line {
+      height: 5px;
+      border-radius: 2px;
+      margin-bottom: 5px;
+      transition: background 0.3s ease, width 0.4s ease;
+    }
+
+    .dp-line.typing {
+      animation: dpType 0.6s ease-out forwards;
+    }
+
+    @keyframes dpType {
+      0% { width: 0; }
+      100% { width: var(--tw); }
+    }
+
+    .dp-line.read {
+      background: rgba(250, 204, 21, 0.25) !important;
+    }
+
+    .dp-line.current {
+      position: relative;
+    }
+
+    .dp-line.current::after {
+      content: '';
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      width: 2px;
+      height: 7px;
+      background: #facc15;
+      border-radius: 1px;
+      animation: dpBlink 0.8s step-end infinite;
+    }
+
+    @keyframes dpBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .dp-divider {
+      height: 1px;
+      background: linear-gradient(to right, #facc15, transparent);
+      margin: 2px 0 4px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .dp-divider.visible { opacity: 1; }
+
+    .dp-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 0 0;
+      flex-shrink: 0;
+    }
+
+    .dp-go-btn {
+      height: 22px;
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+      background: #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .dp-go-btn.stop { background: #ef4444; }
+
+    .dp-waveform {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      height: 14px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .dp-waveform .dp-bar {
+      width: 2px;
+      border-radius: 1px;
+      min-height: 2px;
+      background: rgba(255,255,255,0.08);
+      transition: height 0.08s ease, background 0.15s ease;
+      align-self: center;
+    }
+
+    .dp-waveform .dp-bar.active {
+      background: rgba(250, 204, 21, 0.6);
+    }
+
+    .dp-mic {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .dp-mic.on { background: rgba(250, 204, 21, 0.15); }
+
+    .dp-mic svg {
+      width: 7px;
+      height: 7px;
+      fill: rgba(255, 214, 10, 0.7);
+    }
+
+    /* Mac mini frame for director */
+    .director-mac {
+      width: 280px;
+      min-width: 240px;
+      aspect-ratio: 16 / 10;
+      background: linear-gradient(180deg, #1a1a1e 0%, #111113 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      box-shadow: 0 16px 50px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    .dm-camera {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    .dm-camera .lens {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #3a3a3e 0%, #1a1a1c 60%, #0a0a0c 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .dm-desktop {
+      position: absolute;
+      inset: 0;
+      background: #202124;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dm-desktop-lines {
+      width: 70%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dm-desktop-lines div {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .dm-desktop-lines div:nth-child(1) { width: 60%; }
+    .dm-desktop-lines div:nth-child(2) { width: 80%; }
+    .dm-desktop-lines div:nth-child(3) { width: 50%; }
+    .dm-desktop-lines div:nth-child(4) { width: 70%; }
+
+    .dm-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 5;
+    }
+
+    .dm-overlay.visible { opacity: 1; }
+
+    .dm-overlay .dm-qr {
+      width: 48px;
+      height: 48px;
+      background: #fff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dm-overlay .dm-qr svg {
+      width: 36px;
+      height: 36px;
+      fill: #000;
+    }
+
+    .dm-overlay span {
+      font-size: 7px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Notch on the director mac */
+    .dm-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      overflow: hidden;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1), height 0.5s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .dm-notch svg.dm-notch-shape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dm-notch-words {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 3px;
+      padding: 14px 10px 4px;
+      height: 100%;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 16%, #000 78%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 16%, #000 78%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .dm-notch-words.visible { opacity: 1; }
+
+    .dm-notch-words span {
+      font-size: 7px;
+      font-weight: 600;
+      color: rgba(255,255,255,1);
+      transition: color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .dm-notch-words span.dm-read { color: rgba(255,255,255,0.3); }
+    .dm-notch-words span.dm-current { color: rgba(255,255,255,0.6); text-decoration: underline; text-underline-offset: 2px; }
+
+    .director-labels {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-top: 20px;
+    }
+
+    .director-labels .dl-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .director-labels .dl-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .director-labels .dl-item span {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .dl-dot-phone {
+      background: var(--accent2);
+      box-shadow: 0 0 4px rgba(79, 139, 255, 0.5);
+    }
+
+    .dl-label-phone { color: var(--accent2); }
+
+    .dl-dot-mac {
+      background: #facc15;
+      box-shadow: 0 0 4px rgba(250, 204, 21, 0.5);
+    }
+
+    .dl-label-mac { color: rgba(250, 204, 21, 0.7); }
+
+    .director-footer {
+      text-align: center;
+      margin-top: 32px;
+    }
+
+    .director-footer p {
+      font-size: 14px;
+      color: var(--text3);
+      line-height: 1.7;
+    }
+
+    .director-footer strong {
+      color: var(--text2);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container { padding: 0 18px; }
+      .nav-leading { gap: 8px; }
+      nav .docs-link { padding: 0 2px; }
+      nav .github-link { width: 44px; padding: 0; }
+      nav .github-link span { display: none; }
+      .hero { padding: 60px 0 30px; }
+      .hero .subtitle { font-size: 16px; }
+      .icon-showcase svg { width: 120px; height: 120px; }
+      .features h2, .how-it-works h2, .use-case-section h2, .modes-section h2 { font-size: 26px; }
+      .modes-grid { grid-template-columns: 1fr; }
+      .ipad-frame { width: 160px; bottom: -20px; right: -10px; }
+      #sidecarLabelIPad { bottom: -40px; right: -10px; }
+      .font-showcase h2 { font-size: 26px; }
+      .fs-screen { max-width: 100%; }
+      .fs-notch { width: 260px; height: 120px; }
+      .fs-notch-words { padding: 20px 18px 8px; gap: 3px 5px; }
+      .features-list { grid-template-columns: 1fr; }
+      .feat-item:nth-child(odd) { border-right: none; }
+      .director-section h2 { font-size: 26px; }
+      .director-demo { flex-direction: column; gap: 24px; }
+      .director-demo-arrow { transform: rotate(90deg); }
+      .director-phone { width: 180px; min-width: 180px; }
+      .director-mac { width: 100%; min-width: unset; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Donate top bar -->
+  <div class="donate-bar">
+    <p>Donate me to make <a href="https://prompts.chat" class="donate-source-link">prompts.chat</a> and my other apps better</p>
+    <a href="https://donate.stripe.com/aFa8wO4NF2S96jDfn4dMI09" class="btn-donate">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Donate
+    </a>
+  </div>
+
+  <div class="bg-glow"></div>
+
+  <div class="container">
+    <!-- Nav -->
+    <nav aria-label="Primary navigation">
+      <div class="nav-leading">
+        <a href="/" class="logo" aria-label="DynoPrompt home">
+          <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="nbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1C1C1E"/><stop offset="100%" stop-color="#0A0A0C"/></linearGradient>
+              <linearGradient id="nac" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7C6AFF"/><stop offset="100%" stop-color="#4F8BFF"/></linearGradient>
+              <clipPath id="nrb"><rect width="1024" height="1024" rx="228"/></clipPath>
+            </defs>
+            <rect width="1024" height="1024" rx="228" fill="url(#nbg)"/>
+            <g clip-path="url(#nrb)">
+              <path d="M 172 0 Q 240 0, 240 68 L 240 760 Q 240 840, 320 840 L 704 840 Q 784 840, 784 760 L 784 68 Q 784 0, 852 0 Z" fill="#2A2A2C"/>
+              <text x="512" y="600" font-family="-apple-system, SF Pro Display, Helvetica Neue, sans-serif" font-size="480" font-weight="800" fill="url(#nac)" text-anchor="middle">T</text>
+            </g>
+          </svg>
+          <span>DynoPrompt</span>
+        </a>
+        <a href="/docs/" class="docs-link" aria-label="DynoPrompt documentation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.8 5.2A3.2 3.2 0 0 1 6 2h5v17H6a3.2 3.2 0 0 0-3.2 3V5.2Z"/><path d="M21.2 5.2A3.2 3.2 0 0 0 18 2h-5v17h5a3.2 3.2 0 0 1 3.2 3V5.2Z"/></svg>
+          <span>Docs</span>
+        </a>
+      </div>
+      <a href="https://github.com/f/textream" class="github-link" aria-label="DynoPrompt on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">Teleprompter for Mac, iPhone, and iPad</div>
+      <h1>Your script, <span class="gradient">highlighted live</span><br>as you speak.</h1>
+      <p class="subtitle">DynoPrompt is a free, open-source teleprompter app with three guidance modes: real-time word tracking, classic auto-scroll, and voice-activated scrolling. It displays an elegant Dynamic Island overlay at the top of your screen &mdash; or as a floating window, or fullscreen on a Sidecar iPad. Invisible to your audience, always visible to you.</p>
+      <p class="use-cases">Built for <span>streamers</span> &middot; <span>interviewers</span> &middot; <span>presenters</span> &middot; <span>podcasters</span> &middot; <span>content creators</span></p>
+      <div class="hero-actions">
+        <a href="https://github.com/f/textream/releases/latest" class="btn-primary" data-platform-download>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-platform-download-label>Download for Mac</span>
+        </a>
+        <a href="https://apps.apple.com/app/textream/id6800061488" class="btn-secondary" data-app-store-download>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 13.1c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9-.7 0-1.8-.9-3-.9-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.1 9.3.8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3.1-.7 1.4 0 1.9.7 3.1.7 1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.2-2.6 1.2-2.6-.1 0-2.4-.9-2.4-3.4ZM14.3 5.9c.6-.8 1.1-1.9.9-3-.9 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.2-.5 2.9-1.3Z"/></svg>
+          Download on the App Store
+        </a>
+      </div>
+      <div class="hero-brew" data-desktop-install><span>Homebrew</span><code>brew install textream</code></div>
+      <p class="dl-meta" data-platform-requirements data-iphone-copy="iOS 26+ · No sign-up required" data-ipad-copy="iPadOS 26+ · No sign-up required">macOS 15+ &middot; iOS 26+ &middot; No sign-up required</p>
+    </section>
+
+    <!-- Animated Demo -->
+    <section class="demo">
+      <div class="sidecar-wrapper">
+        <div class="ipad-frame" id="ipadFrame">
+          <div class="mirror-badge">MIRROR</div>
+          <div class="home-bar"></div>
+          <div class="ipad-prompter">
+            <div class="ipad-prompter-words" id="ipadWords"></div>
+            <div class="ipad-done" id="ipadDone">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#34C759" stroke-width="2"/><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="#34C759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Done!</span>
+            </div>
+            <div class="ipad-toolbar" id="ipadToolbar">
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <svg class="ipad-mic" viewBox="0 0 24 24" fill="#ffd60a"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="sidecar-label" id="sidecarLabelIPad"><div class="dot"></div><span>iPad · Sidecar</span></div>
+        <div class="screen-frame">
+          <div class="demo-camera">
+            <div class="lens"></div>
+            <div class="green-dot"></div>
+          </div>
+          <div class="demo-notch" id="demoNotch">
+            <svg class="notch-shape" id="notchSvg" preserveAspectRatio="none"><path id="notchPath" fill="#000"/></svg>
+            <div class="demo-notch-content">
+              <div class="demo-words" id="demoWords"></div>
+              <div class="demo-done" id="demoDone">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#34C759" stroke-width="2"/><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="#34C759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Done!</span>
+              </div>
+              <div class="demo-toolbar" id="demoToolbar">
+                <div class="demo-waveform" id="demoWaveform"></div>
+                <div class="demo-spoken" id="demoSpoken"></div>
+                <div class="demo-btn mic" title="Mic">
+                  <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="#ffd60a" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="#ffd60a" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="#ffd60a" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <div class="demo-btn close" title="Close">
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="screen-desktop" id="screenDesktop">
+            <!-- Scene: Meeting -->
+            <div class="scene scene-meeting active" id="sceneMeeting">
+              <div class="meet-grid">
+                <div class="meet-tile self-tile">
+                  <svg class="silhouette" viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                  <span class="tile-name">You</span>
+                </div>
+                <div class="meet-tile">
+                  <svg class="silhouette" viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                  <span class="tile-name">Alex</span>
+                </div>
+                <div class="meet-tile">
+                  <svg class="silhouette" viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                  <span class="tile-name">Jordan</span>
+                </div>
+                <div class="meet-tile">
+                  <svg class="silhouette" viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                  <span class="tile-name">Sam</span>
+                </div>
+              </div>
+              <div class="meet-bar">
+                <div class="meet-bar-btn mic-on"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></div>
+                <div class="meet-bar-btn cam-on"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+                <div class="meet-bar-btn end-call"><svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 4 .64 2 2 0 0 1 2 2v3.28a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.59 2.18 2 2 0 0 1 5.57.09H8.9a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11z" stroke="white" fill="none"/></svg></div>
+              </div>
+            </div>
+            <!-- Scene: Presentation (Meet screen share) -->
+            <div class="scene scene-presentation" id="scenePresentation">
+              <div class="pres-layout">
+                <div class="pres-shared">
+                  <div class="pres-shared-title"></div>
+                  <div class="pres-shared-sub"></div>
+                  <div class="pres-shared-lines">
+                    <div></div><div></div><div></div>
+                  </div>
+                  <div class="pres-shared-chart">
+                    <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                  </div>
+                  <svg class="pres-shared-pie" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="14" stroke="#4285f4" stroke-dasharray="40 88" stroke-dashoffset="25" opacity="0.6"/>
+                    <circle cx="18" cy="18" r="14" stroke="#34a853" stroke-dasharray="28 88" stroke-dashoffset="-15" opacity="0.5"/>
+                    <circle cx="18" cy="18" r="14" stroke="#fbbc04" stroke-dasharray="20 88" stroke-dashoffset="-43" opacity="0.5"/>
+                  </svg>
+                </div>
+                <div class="pres-people">
+                  <div class="pres-person speaking">
+                    <svg viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                    <span class="pp-name">You</span>
+                  </div>
+                  <div class="pres-person">
+                    <svg viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                    <span class="pp-name">Alex</span>
+                  </div>
+                  <div class="pres-person">
+                    <svg viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                    <span class="pp-name">Jordan</span>
+                  </div>
+                  <div class="pres-person">
+                    <svg viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                    <span class="pp-name">Sam</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pres-meet-bar">
+                <div class="meet-bar-btn mic-on"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></div>
+                <div class="meet-bar-btn cam-on"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+                <div class="meet-bar-btn end-call"><svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 4 .64 2 2 0 0 1 2 2v3.28a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.59 2.18 2 2 0 0 1 5.57.09H8.9a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11z" stroke="white" fill="none"/></svg></div>
+              </div>
+            </div>
+            <!-- Scene: Recording -->
+            <div class="scene scene-recording" id="sceneRecording">
+              <div class="rec-viewfinder">
+                <svg viewBox="0 0 80 80"><circle cx="40" cy="28" r="14"/><ellipse cx="40" cy="72" rx="24" ry="18"/></svg>
+                <div class="rec-dot"></div>
+                <div class="rec-time">02:34</div>
+              </div>
+              <div class="rec-bar">
+                <div class="rec-btn"><div class="rec-inner"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="demo-mode-label" id="demoModeLabel"></div>
+        </div>
+        <div class="sidecar-label" id="sidecarLabelMac"><span>MacBook</span></div>
+      </div>
+    </section>
+
+    <!-- Tagline -->
+    <div class="tagline">
+      <p>Stop memorizing scripts. Stop glancing at notes off-camera. DynoPrompt puts your words right where you need them &mdash; in a subtle overlay that only you can see, highlighting each line as you say it. Your audience sees confidence; you see your next line.</p>
+    </div>
+
+    <script>
+    (function() {
+      const words = 'Welcome to DynoPrompt the smart teleprompter [pause] that highlights your script as you speak in real time [smile] Perfect for streamers who need to read sponsor segments [look at camera] interviewers who want to keep questions visible and presenters who never want to lose their place [pause] Just paste your text hit play and start talking'.split(' ');
+      const notch = document.getElementById('demoNotch');
+      const notchSvg = document.getElementById('notchSvg');
+      const notchPath = document.getElementById('notchPath');
+      const wordsEl = document.getElementById('demoWords');
+      const waveEl = document.getElementById('demoWaveform');
+      const spokenEl = document.getElementById('demoSpoken');
+      const doneEl = document.getElementById('demoDone');
+      const toolbarEl = document.getElementById('demoToolbar');
+      const ipadFrame = document.getElementById('ipadFrame');
+      const ipadWordsEl = document.getElementById('ipadWords');
+      const ipadDoneEl = document.getElementById('ipadDone');
+      const ipadToolbarEl = document.getElementById('ipadToolbar');
+      const labelMac = document.getElementById('sidecarLabelMac');
+      const labelIPad = document.getElementById('sidecarLabelIPad');
+      const modeLabel = document.getElementById('demoModeLabel');
+      const scenes = [
+        document.getElementById('sceneMeeting'),
+        document.getElementById('scenePresentation'),
+        document.getElementById('sceneRecording'),
+      ];
+      let waveInterval, animFrame, cycleCount = 0;
+
+      function showScene(index) {
+        scenes.forEach(s => s.classList.remove('active'));
+        scenes[index % scenes.length].classList.add('active');
+      }
+
+      // Notch shape: concave top corners (pinned)
+      function notchShapePath(w, h, t, br) {
+        return `M 0,0 Q ${t},0 ${t},${t} L ${t},${h - br} Q ${t},${h} ${t + br},${h} L ${w - t - br},${h} Q ${w - t},${h} ${w - t},${h - br} L ${w - t},${t} Q ${w - t},0 ${w},0 Z`;
+      }
+
+      // Rounded rect shape (floating)
+      function roundedRectPath(w, h, r) {
+        return `M ${r},0 L ${w - r},0 Q ${w},0 ${w},${r} L ${w},${h - r} Q ${w},${h} ${w - r},${h} L ${r},${h} Q 0,${h} 0,${h - r} L 0,${r} Q 0,0 ${r},0 Z`;
+      }
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      const collW = 120, collH = 24, collT = 6, collBR = 8;
+      const expW = 340, expH = 155, expT = 14, expBR = 16;
+
+      let current = { w: collW, h: collH, t: collT, br: collBR };
+      let target = { ...current };
+      let isFloating = false;
+
+      function updateNotch() {
+        notch.style.width = current.w + 'px';
+        notch.style.height = current.h + 'px';
+        notchSvg.setAttribute('viewBox', `0 0 ${current.w} ${current.h}`);
+        if (isFloating) {
+          notchPath.setAttribute('d', roundedRectPath(current.w, current.h, current.br));
+        } else {
+          notchPath.setAttribute('d', notchShapePath(current.w, current.h, current.t, current.br));
+        }
+      }
+
+      function animateTo(tgt, duration, cb) {
+        const start = { ...current };
+        target = tgt;
+        const t0 = performance.now();
+        function step(now) {
+          const p = Math.min((now - t0) / duration, 1);
+          const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+          current.w = lerp(start.w, target.w, ease);
+          current.h = lerp(start.h, target.h, ease);
+          current.t = lerp(start.t, target.t, ease);
+          current.br = lerp(start.br, target.br, ease);
+          updateNotch();
+          if (p < 1) { animFrame = requestAnimationFrame(step); }
+          else if (cb) { cb(); }
+        }
+        animFrame = requestAnimationFrame(step);
+      }
+
+      let wordsInner, ipadWordsInner;
+
+      function isAnnotation(word) {
+        return word.startsWith('[') && word.endsWith(']');
+      }
+
+      function parseWords(raw) {
+        const result = [];
+        let i = 0;
+        while (i < raw.length) {
+          if (raw[i].startsWith('[')) {
+            let group = raw[i];
+            while (!group.endsWith(']') && i + 1 < raw.length) {
+              i++;
+              group += ' ' + raw[i];
+            }
+            result.push(group);
+          } else {
+            result.push(raw[i]);
+          }
+          i++;
+        }
+        return result;
+      }
+
+      const parsed = parseWords(words);
+
+      function buildWords() {
+        wordsEl.innerHTML = '';
+        wordsInner = document.createElement('div');
+        wordsInner.className = 'demo-words-inner';
+        parsed.forEach(w => {
+          const s = document.createElement('span');
+          s.textContent = w;
+          if (isAnnotation(w)) s.classList.add('annotation');
+          wordsInner.appendChild(s);
+        });
+        wordsEl.appendChild(wordsInner);
+      }
+
+      function buildIPadWords(isMirror) {
+        ipadWordsEl.innerHTML = '';
+        ipadWordsInner = document.createElement('div');
+        ipadWordsInner.className = 'ipad-prompter-words-inner';
+        if (isMirror) ipadWordsInner.style.transform = 'scaleY(-1)';
+        parsed.forEach(w => {
+          const s = document.createElement('span');
+          s.textContent = w;
+          if (isAnnotation(w)) s.classList.add('annotation');
+          ipadWordsInner.appendChild(s);
+        });
+        ipadWordsEl.appendChild(ipadWordsInner);
+      }
+
+      function scrollToWord(span) {
+        const containerH = wordsEl.clientHeight;
+        const spanOffsetTop = span.offsetTop;
+        const spanH = span.offsetHeight;
+        const offset = spanOffsetTop + spanH / 2 - containerH / 2;
+        wordsInner.style.transform = `translateY(-${offset}px)`;
+      }
+
+      function scrollIPadToWord(span, isMirror) {
+        const containerH = ipadWordsEl.clientHeight;
+        const spanOffsetTop = span.offsetTop;
+        const spanH = span.offsetHeight;
+        const offset = spanOffsetTop + spanH / 2 - containerH / 2;
+        const scaleY = isMirror ? ' scaleY(-1)' : '';
+        ipadWordsInner.style.transform = `translateY(-${offset}px)${scaleY}`;
+      }
+
+      const totalBars = 30;
+      let currentProgress = 0;
+
+      function buildWaveform() {
+        waveEl.innerHTML = '';
+        for (let i = 0; i < totalBars; i++) {
+          const bar = document.createElement('div');
+          bar.className = 'bar';
+          bar.style.height = '4px';
+          waveEl.appendChild(bar);
+        }
+      }
+
+      function updateWaveformProgress(progress) {
+        currentProgress = progress;
+        const bars = waveEl.querySelectorAll('.bar');
+        bars.forEach((bar, i) => {
+          const barP = i / (totalBars - 1);
+          if (barP <= progress) { bar.classList.add('lit'); }
+          else { bar.classList.remove('lit'); }
+        });
+      }
+
+      function animateWaveform() {
+        const bars = waveEl.querySelectorAll('.bar');
+        const ipadBars = ipadToolbarEl.querySelectorAll('.bar');
+        waveInterval = setInterval(() => {
+          bars.forEach(bar => { bar.style.height = Math.max(3, Math.random() * 14) + 'px'; });
+          ipadBars.forEach(bar => { bar.style.height = Math.max(2, Math.random() * 8) + 'px'; });
+        }, 100);
+      }
+
+      function stopWaveform() {
+        clearInterval(waveInterval);
+        waveEl.querySelectorAll('.bar').forEach(bar => { bar.style.height = '4px'; bar.classList.remove('lit'); });
+        ipadToolbarEl.querySelectorAll('.bar').forEach(bar => { bar.style.height = '4px'; });
+      }
+
+      // Floating mode: move notch to a position within the screen
+      function moveNotchTo(top, left) {
+        notch.style.top = top;
+        notch.style.left = left;
+        notch.style.right = 'auto';
+      }
+
+      function resetNotchPosition() {
+        notch.style.top = '0';
+        notch.style.left = '50%';
+        notch.style.right = '';
+        notch.style.transform = 'translateX(-50%)';
+        notch.classList.remove('floating');
+        isFloating = false;
+      }
+
+      function setModeLabel(text) {
+        modeLabel.textContent = text;
+        modeLabel.classList.add('visible');
+      }
+
+      function hideModeLabel() {
+        modeLabel.classList.remove('visible');
+      }
+
+      // Floating positions: the notch drifts to these spots
+      const floatPositions = [
+        { top: '60px', left: '20px' },
+        { top: '120px', left: '280px' },
+        { top: '40px', left: '160px' },
+        { top: '160px', left: '60px' },
+        { top: '80px', left: '380px' },
+      ];
+
+      // Split words into 2 segments: sidecar, then floating
+      const segMid = Math.floor(parsed.length / 2);
+      const WORD_MS = 350;
+      const TRANSITION_MS = 800;
+
+      // Scene pairs: [sidecar scene, floating scene]
+      const scenePairs = [[0, 1], [1, 2], [2, 0]];
+
+      function enterFloatingMode() {
+        isFloating = true;
+        notch.classList.add('floating');
+        notch.style.transform = 'none';
+        moveNotchTo(floatPositions[0].top, floatPositions[0].left);
+        updateNotch();
+        setModeLabel('Floating Window');
+        ipadFrame.classList.remove('visible');
+        labelIPad.classList.remove('visible');
+        // Switch background scene
+        const pair = scenePairs[cycleCount % scenePairs.length];
+        showScene(pair[1]);
+      }
+
+      function runCycle() {
+        buildWords();
+        buildIPadWords(false);
+        buildWaveform();
+
+        // Show first scene of the pair
+        const pair = scenePairs[cycleCount % scenePairs.length];
+        showScene(pair[0]);
+
+        // Reset everything
+        doneEl.style.display = 'none';
+        wordsEl.style.display = 'flex';
+        toolbarEl.style.display = 'flex';
+        spokenEl.textContent = '';
+        notch.classList.remove('expanded', 'floating');
+        isFloating = false;
+        resetNotchPosition();
+        current = { w: collW, h: collH, t: collT, br: collBR };
+        updateNotch();
+        ipadFrame.classList.remove('visible');
+        ipadDoneEl.style.display = 'none';
+        ipadWordsEl.style.display = 'flex';
+        ipadToolbarEl.style.display = 'flex';
+        labelMac.classList.remove('visible');
+        labelIPad.classList.remove('visible');
+        hideModeLabel();
+
+        // Phase 1: Expand notch (sidecar mode)
+        setTimeout(() => {
+          notch.classList.add('expanded');
+          animateTo({ w: expW, h: expH, t: expT, br: expBR }, 500);
+          labelMac.classList.add('visible');
+          ipadFrame.classList.add('visible');
+          labelIPad.classList.add('visible');
+          setModeLabel('Sidecar');
+        }, 600);
+
+        // Phase 2: Highlight words, switch to floating at midpoint
+        setTimeout(() => {
+          animateWaveform();
+          let spokenWords = [];
+          const spans = wordsInner.querySelectorAll('span');
+          let floatStep = 1;
+
+          spans.forEach((span, i) => {
+            const baseTime = i * WORD_MS + (i >= segMid ? TRANSITION_MS : 0);
+
+            setTimeout(() => {
+              // Switch to floating at midpoint
+              if (i === segMid) enterFloatingMode();
+
+              // Highlight word
+              if (i > 0) {
+                spans[i - 1].classList.remove('current');
+                spans[i - 1].classList.add('highlighted');
+              }
+              span.classList.add('current');
+              scrollToWord(span);
+
+              // iPad sync (sidecar segment only)
+              if (i < segMid) {
+                const ipadSpans = ipadWordsInner.querySelectorAll('span');
+                if (i > 0 && ipadSpans[i - 1]) {
+                  ipadSpans[i - 1].classList.remove('current');
+                  ipadSpans[i - 1].classList.add('highlighted');
+                }
+                if (ipadSpans[i]) {
+                  ipadSpans[i].classList.add('current');
+                  scrollIPadToWord(ipadSpans[i], false);
+                }
+              }
+
+              if (!isAnnotation(parsed[i])) {
+                spokenWords.push(parsed[i]);
+                spokenEl.textContent = spokenWords.slice(-4).join(' ');
+              }
+              updateWaveformProgress((i + 1) / parsed.length);
+
+              // Floating: drift every 4 words
+              if (i >= segMid && (i - segMid) % 4 === 0 && i !== segMid) {
+                const pos = floatPositions[floatStep % floatPositions.length];
+                moveNotchTo(pos.top, pos.left);
+                floatStep++;
+              }
+            }, baseTime);
+          });
+
+          const totalTime = parsed.length * WORD_MS + TRANSITION_MS + 500;
+
+          // Phase 3: Done
+          setTimeout(() => {
+            stopWaveform();
+            wordsEl.style.display = 'none';
+            toolbarEl.style.display = 'none';
+            doneEl.style.display = 'flex';
+          }, totalTime);
+
+          // Phase 4: Collapse
+          setTimeout(() => {
+            doneEl.style.display = 'none';
+            notch.classList.remove('expanded', 'floating');
+            isFloating = false;
+            resetNotchPosition();
+            animateTo({ w: collW, h: collH, t: collT, br: collBR }, 400);
+            ipadFrame.classList.remove('visible');
+            labelMac.classList.remove('visible');
+            labelIPad.classList.remove('visible');
+            hideModeLabel();
+          }, totalTime + 1200);
+
+          // Phase 5: Loop
+          setTimeout(() => runCycle(), totalTime + 2400);
+        }, 1300);
+      }
+
+      updateNotch();
+      runCycle();
+    })();
+    </script>
+
+    <!-- Who it's for -->
+    <section class="use-case-section">
+      <h2>Made for people who speak on camera</h2>
+      <p class="section-sub">Whether you're live or recording, DynoPrompt keeps you on script.</p>
+      <div class="use-case-grid">
+        <div class="use-case-item">
+          <div class="uc-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
+          <h3>Streamers</h3>
+          <p>Read sponsor segments, announcements, and talking points without looking away from the camera.</p>
+        </div>
+        <div class="use-case-item">
+          <div class="uc-icon"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+          <h3>Interviewers</h3>
+          <p>Keep your questions on screen while maintaining natural eye contact with your guest.</p>
+        </div>
+        <div class="use-case-item">
+          <div class="uc-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+          <h3>Presenters</h3>
+          <p>Deliver keynotes, demos, and talks with confidence. Never lose your place in the script.</p>
+        </div>
+        <div class="use-case-item">
+          <div class="uc-icon"><svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></div>
+          <h3>Podcasters</h3>
+          <p>Follow your show notes, ad reads, and topic outlines hands-free while recording.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guidance Modes -->
+    <section class="modes-section">
+      <h2>Three ways to guide your read</h2>
+      <p class="section-sub">Choose the mode that fits your workflow. Switch anytime in settings.</p>
+      <div class="modes-grid">
+        <div class="mode-card word-tracking">
+          <div class="mode-visual">
+            <div class="mode-visual-lines">
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+            </div>
+            <div class="mode-visual-indicator"><div class="dot"></div><span>Tracking</span></div>
+          </div>
+          <div class="mode-info">
+            <span class="mode-tag">Default</span>
+            <h3>Word Tracking</h3>
+            <p>Listens to your voice and highlights each word as you say it. Tap any word to jump. Supports dozens of languages.</p>
+          </div>
+        </div>
+        <div class="mode-card classic">
+          <div class="mode-visual">
+            <div class="mode-visual-lines">
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+            </div>
+            <div class="mode-visual-indicator"><div class="dot"></div><span>Scrolling</span></div>
+          </div>
+          <div class="mode-info">
+            <span class="mode-tag">No mic needed</span>
+            <h3>Classic</h3>
+            <p>Auto-scrolls at a constant speed. Adjust the pace with a slider. Scroll with your mouse to catch up anytime.</p>
+          </div>
+        </div>
+        <div class="mode-card voice-activated">
+          <div class="mode-visual">
+            <div class="mode-visual-lines">
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+              <div class="mode-visual-line"><div class="fill"></div></div>
+            </div>
+            <div class="mode-visual-indicator">
+              <div class="mode-voice-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+              <span>Speaking</span>
+            </div>
+          </div>
+          <div class="mode-info">
+            <span class="mode-tag">Smart pause</span>
+            <h3>Voice-Activated</h3>
+            <p>Scrolls while you speak, pauses when you&rsquo;re silent or muted. Perfect for natural pacing without manual control.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Font & Accessibility Showcase -->
+    <section class="font-showcase">
+      <h2>Accessibility first</h2>
+      <p class="section-sub">Every reader is different. DynoPrompt adapts to how you read best.</p>
+      <div class="font-showcase-stage">
+        <div class="fs-screen">
+          <div class="fs-camera"><div class="lens"></div></div>
+          <div class="fs-desktop">
+            <div class="fs-desktop-content">
+              <div class="fs-desktop-line"></div>
+              <div class="fs-desktop-line"></div>
+              <div class="fs-desktop-line"></div>
+              <div class="fs-desktop-line"></div>
+              <div class="fs-desktop-line"></div>
+            </div>
+          </div>
+          <div class="fs-notch" id="fsNotch">
+            <svg class="fs-notch-shape" id="fsShape" preserveAspectRatio="none"><path id="fsPath" fill="#000"/></svg>
+            <div class="fs-notch-words visible" id="fsWords"></div>
+          </div>
+        </div>
+        <span class="fs-label" id="fsLabel">Sans Serif &middot; LG &middot; White</span>
+        <div class="fs-a11y-tag" id="fsA11y">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Dyslexia-friendly mode
+        </div>
+      </div>
+      <div class="font-showcase-footer">
+        <p><strong>Sans Serif, Serif, Monospace, and OpenDyslexic</strong> &mdash; six highlight colors &mdash; four text sizes.<br>Customize everything in Settings. Your eyes, your rules.</p>
+      </div>
+    </section>
+
+    <script>
+    (function() {
+      var wordsEl = document.getElementById('fsWords');
+      var shapeEl = document.getElementById('fsShape');
+      var pathEl  = document.getElementById('fsPath');
+      var labelEl = document.getElementById('fsLabel');
+      var a11yEl  = document.getElementById('fsA11y');
+
+      var W = 280, H = 140, T = 13, BR = 15;
+      shapeEl.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      pathEl.setAttribute('d',
+        'M 0,0 Q '+T+',0 '+T+','+T+' L '+T+','+(H-BR)+' Q '+T+','+H+' '+(T+BR)+','+H+
+        ' L '+(W-T-BR)+','+H+' Q '+(W-T)+','+H+' '+(W-T)+','+(H-BR)+' L '+(W-T)+','+T+
+        ' Q '+(W-T)+',0 '+W+',0 Z'
+      );
+
+      var text = 'Welcome to DynoPrompt the smart teleprompter that highlights your script as you speak in real time Perfect for streamers interviewers and presenters'.split(' ');
+      var cursor = 7;
+      var spans = [];
+
+      var fonts = {
+        sans:     { f: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", n: 'Sans Serif' },
+        serif:    { f: "Georgia, 'Times New Roman', serif", n: 'Serif' },
+        mono:     { f: "'SF Mono', 'Fira Code', 'Courier New', monospace", n: 'Monospace' },
+        dyslexic: { f: "'OpenDyslexic', sans-serif", n: 'OpenDyslexic' }
+      };
+      var sizes = {
+        xs: { p: '11px', lh: '1.3', n: 'XS' }, sm: { p: '13px', lh: '1.35', n: 'SM' },
+        lg: { p: '17px', lh: '1.55', n: 'LG' }, xl: { p: '20px', lh: '1.65', n: 'XL' }
+      };
+      var colors = {
+        white: { h: '#F5F5F7', n: 'White' }, yellow: { h: '#FFD60A', n: 'Yellow' },
+        green: { h: '#32D74B', n: 'Green' }, blue: { h: '#64D2FF', n: 'Blue' },
+        pink: { h: '#FF6482', n: 'Pink' }, orange: { h: '#FF9F0A', n: 'Orange' }
+      };
+
+      text.forEach(function(w, i) {
+        var s = document.createElement('span');
+        s.textContent = w;
+        if (i < cursor) s.className = 'fn-dim';
+        else if (i === cursor) s.className = 'fn-current';
+        wordsEl.appendChild(s);
+        spans.push(s);
+      });
+
+      function morph(font, size, color) {
+        var fv = fonts[font], sv = sizes[size], cv = colors[color];
+        spans.forEach(function(s) {
+          s.style.fontFamily = fv.f;
+          s.style.fontSize = sv.p;
+          s.style.lineHeight = sv.lh;
+          s.style.color = cv.h;
+        });
+        labelEl.textContent = fv.n + ' \u00B7 ' + sv.n + ' \u00B7 ' + cv.n;
+        a11yEl.classList.toggle('visible', font === 'dyslexic');
+      }
+
+      var seq = [
+        { f:'sans',    s:'lg', c:'white',  d:500 },
+        { f:'serif',   s:'lg', c:'yellow', d:500 },
+        { f:'mono',    s:'sm', c:'green',  d:500 },
+        { f:'sans',    s:'xl', c:'blue',   d:500 },
+        { f:'serif',   s:'lg', c:'pink',   d:500 },
+        { f:'mono',    s:'lg', c:'orange', d:500 },
+        { f:'dyslexic',s:'lg', c:'yellow', d:1500 },
+        { f:'sans',    s:'xl', c:'green',  d:500 },
+        { f:'mono',    s:'sm', c:'blue',   d:500 },
+        { f:'serif',   s:'lg', c:'white',  d:500 },
+        { f:'dyslexic',s:'lg', c:'green',  d:1500 },
+        { f:'sans',    s:'lg', c:'white',  d:500 },
+      ];
+
+      var i = 0;
+      function tick() {
+        var s = seq[i % seq.length];
+        morph(s.f, s.s, s.c);
+        i++;
+        setTimeout(tick, s.d);
+      }
+      morph('sans', 'lg', 'white');
+      setTimeout(tick, 500);
+    })();
+    </script>
+
+    <!-- Features -->
+    <section class="features">
+      <h2>How it keeps you on track</h2>
+      <p class="section-sub">Powered by macOS speech recognition. No account required.</p>
+      <div class="features-list">
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></div>
+          <div class="feat-text"><h3>Real-Time Voice Tracking</h3><p>Highlights each word as you say it using macOS speech recognition. Processing depends on your Mac, selected language, and system availability.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <div class="feat-text"><h3>Classic &amp; Voice-Activated Scroll</h3><p>Auto-scroll at a constant speed (no mic needed), or scroll only while you speak with voice-activated mode. Adjustable 0.5–8 words/s.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+          <div class="feat-text"><h3>Dynamic Island Overlay</h3><p>Notch-shaped overlay anchored below the MacBook notch. Sits above all apps. Follow Mouse or pin to a fixed display.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="feat-text"><h3>Floating Window</h3><p>Draggable window with optional frosted glass effect and adjustable opacity. Follow Cursor mode sticks it to your mouse.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="2" y1="7" x2="22" y2="7"/></svg></div>
+          <div class="feat-text"><h3>Fullscreen Mode</h3><p>Fullscreen teleprompter on any display — your main screen or external. Large, readable text. Press Esc to stop.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="8" y="10" width="16" height="11" rx="2" fill="none"/></svg></div>
+          <div class="feat-text"><h3>External Display &amp; Sidecar</h3><p>Fullscreen teleprompter on external displays or Sidecar iPad. Configurable mirror mode (horizontal, vertical, both) for prompter rigs.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg></div>
+          <div class="feat-text"><h3>Remote Connection</h3><p>View your teleprompter on any device — phone, tablet, or another computer. Scan a QR code, open in any browser. Real-time sync over your local network.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg></div>
+          <div class="feat-text"><h3>Director Mode</h3><p>Let someone else control your teleprompter remotely. A director writes and pushes scripts from any browser. Read text locks, unread stays editable.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="feat-text"><h3>Live Voice Waveform</h3><p>Real-time waveform and progress bar show your voice activity so you always know the mic is working.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
+          <div class="feat-text"><h3>Pause, Resume &amp; Mute</h3><p>Go off-script, mute the mic, come back. Tap any word to jump. Picks up where you left off.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="feat-text"><h3>Font Customization</h3><p>Sans, Serif, Mono, OpenDyslexic. Four sizes (XS–XL), six highlight colors. Adjustable overlay width and height.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
+          <div class="feat-text"><h3>Multi-Display Support</h3><p>Follow Mouse moves the notch across screens, or pin it to a specific display. Choose any connected screen for fullscreen mode.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M8 20h8"/><path d="M12 16v4"/><path d="M9 8h6"/><path d="M9 11h4"/></svg></div>
+          <div class="feat-text"><h3>PowerPoint Notes Import</h3><p>Drop a .pptx file to extract presenter notes as pages. Works with Keynote and Google Slides — export to PowerPoint first.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="feat-text"><h3>Save as .dynoprompt Files</h3><p>Save scripts as .dynoprompt files to reuse anytime. Multi-page support with automatic page advance.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></div>
+          <div class="feat-text"><h3>Hidden from Screen Share</h3><p>Toggle to hide the overlay from screen recordings and video calls. Only you see the teleprompter.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <div class="feat-text"><h3>Private by Design</h3><p>No account, ads, analytics, or DynoPrompt-operated cloud service. macOS may send microphone audio to Apple for speech processing.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M21 2H3v16h18V2z"/><path d="M12 18v4"/><path d="M8 22h8"/></svg></div>
+          <div class="feat-text"><h3>Auto Updates</h3><p>Checks GitHub Releases for new versions on launch. One click to download the latest.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></div>
+          <div class="feat-text"><h3>Open Source</h3><p>MIT licensed. Free forever. Contributions welcome on GitHub.</p></div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"><svg viewBox="0 0 24 24"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg></div>
+          <div class="feat-text"><h3>CJK &amp; Multilingual</h3><p>Full support for Chinese, Japanese, and Korean scripts with proper character-level wrapping. Works with dozens of speech recognition languages.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Director Mode -->
+    <section class="director-section">
+      <h2>Hand the script to a director</h2>
+      <p class="section-sub">Someone else writes. You read. The teleprompter follows along in real time.</p>
+      <div class="director-demo">
+        <!-- Phone: Director UI -->
+        <div class="director-phone" id="dirPhone">
+          <div class="phone-notch"></div>
+          <div class="phone-home"></div>
+          <div class="director-phone-content">
+            <div class="dp-header">
+              <div class="dp-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+              <span>DynoPrompt Director</span>
+            </div>
+            <div class="dp-editor" id="dpEditor"></div>
+            <div class="dp-divider" id="dpDivider"></div>
+            <div class="dp-controls">
+              <div class="dp-go-btn" id="dpGoBtn">GO</div>
+              <div class="dp-waveform" id="dpWaveform"></div>
+              <div class="dp-mic" id="dpMic"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <div class="director-demo-arrow">
+          <svg viewBox="0 0 48 24"><line x1="4" y1="12" x2="40" y2="12"/><polyline points="34 6 40 12 34 18"/></svg>
+          <span>Wi-Fi</span>
+        </div>
+
+        <!-- Mac: Notch overlay -->
+        <div class="director-mac" id="dirMac">
+          <div class="dm-camera"><div class="lens"></div></div>
+          <div class="dm-desktop">
+            <div class="dm-desktop-lines"><div></div><div></div><div></div><div></div></div>
+          </div>
+          <div class="dm-overlay visible" id="dmOverlay">
+            <div class="dm-qr">
+              <svg viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1" fill="#000"/><rect x="14" y="2" width="8" height="8" rx="1" fill="#000"/><rect x="2" y="14" width="8" height="8" rx="1" fill="#000"/><rect x="4" y="4" width="4" height="4" rx="0.5" fill="#fff"/><rect x="16" y="4" width="4" height="4" rx="0.5" fill="#fff"/><rect x="4" y="16" width="4" height="4" rx="0.5" fill="#fff"/><rect x="14" y="14" width="3" height="3" fill="#000"/><rect x="19" y="14" width="3" height="3" fill="#000"/><rect x="14" y="19" width="3" height="3" fill="#000"/><rect x="19" y="19" width="3" height="3" fill="#000"/></svg>
+            </div>
+            <span>Director Mode</span>
+          </div>
+          <div class="dm-notch" id="dmNotch">
+            <svg class="dm-notch-shape" id="dmNotchSvg" preserveAspectRatio="none"><path id="dmNotchPath" fill="#000"/></svg>
+            <div class="dm-notch-words" id="dmNotchWords"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="director-labels">
+        <div class="dl-item"><div class="dl-dot dl-dot-phone"></div><span class="dl-label-phone">Director's Phone</span></div>
+        <div class="dl-item"><div class="dl-dot dl-dot-mac"></div><span class="dl-label-mac">Your Mac</span></div>
+      </div>
+
+      <div class="director-footer">
+        <p><strong>Enable in Settings &rarr; Director</strong> &mdash; scan the QR code from any phone or tablet &mdash; type a script, hit Go.<br>Word tracking starts automatically. Read text locks. Unread text stays editable.</p>
+      </div>
+    </section>
+
+    <script>
+    (function() {
+      var editor = document.getElementById('dpEditor');
+      var goBtn = document.getElementById('dpGoBtn');
+      var divider = document.getElementById('dpDivider');
+      var waveform = document.getElementById('dpWaveform');
+      var mic = document.getElementById('dpMic');
+      var overlay = document.getElementById('dmOverlay');
+      var notch = document.getElementById('dmNotch');
+      var notchSvg = document.getElementById('dmNotchSvg');
+      var notchPath = document.getElementById('dmNotchPath');
+      var notchWords = document.getElementById('dmNotchWords');
+
+      var lineWidths = ['85%','70%','90%','60%','80%','75%','65%','88%'];
+      var lineColors = ['rgba(255,255,255,0.12)','rgba(255,255,255,0.10)','rgba(255,255,255,0.11)','rgba(255,255,255,0.09)','rgba(255,255,255,0.12)','rgba(255,255,255,0.10)','rgba(255,255,255,0.11)','rgba(255,255,255,0.09)'];
+      var scriptWords = 'Welcome everyone to today\'s live stream We have some exciting announcements to share with you First let me tell you about our new product launch'.split(' ');
+
+      // Build waveform bars
+      for (var i = 0; i < 20; i++) {
+        var bar = document.createElement('div');
+        bar.className = 'dp-bar';
+        bar.style.height = '2px';
+        waveform.appendChild(bar);
+      }
+
+      // Notch shape helper
+      function notchShapePath(w, h, t, br) {
+        return 'M 0,0 Q '+t+',0 '+t+','+t+' L '+t+','+(h-br)+' Q '+t+','+h+' '+(t+br)+','+h+' L '+(w-t-br)+','+h+' Q '+(w-t)+','+h+' '+(w-t)+','+(h-br)+' L '+(w-t)+','+t+' Q '+(w-t)+',0 '+w+',0 Z';
+      }
+
+      var collW = 60, collH = 12, collT = 3, collBR = 4;
+      var expW = 180, expH = 80, expT = 7, expBR = 8;
+
+      function setNotchSize(w, h, t, br) {
+        notch.style.width = w + 'px';
+        notch.style.height = h + 'px';
+        notchSvg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+        notchPath.setAttribute('d', notchShapePath(w, h, t, br));
+      }
+
+      function animateNotch(fromW, fromH, fromT, fromBR, toW, toH, toT, toBR, dur, cb) {
+        var t0 = performance.now();
+        function step(now) {
+          var p = Math.min((now - t0) / dur, 1);
+          var ease = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2,3)/2;
+          setNotchSize(
+            fromW + (toW-fromW)*ease,
+            fromH + (toH-fromH)*ease,
+            fromT + (toT-fromT)*ease,
+            fromBR + (toBR-fromBR)*ease
+          );
+          if (p < 1) requestAnimationFrame(step);
+          else if (cb) cb();
+        }
+        requestAnimationFrame(step);
+      }
+
+      // Build notch words
+      function buildNotchWords() {
+        notchWords.innerHTML = '';
+        scriptWords.forEach(function(w) {
+          var s = document.createElement('span');
+          s.textContent = w;
+          notchWords.appendChild(s);
+        });
+      }
+
+      var waveInterval;
+
+      function startWave() {
+        var bars = waveform.querySelectorAll('.dp-bar');
+        waveInterval = setInterval(function() {
+          bars.forEach(function(bar) {
+            bar.style.height = Math.max(2, Math.random() * 12) + 'px';
+            bar.classList.add('active');
+          });
+        }, 100);
+      }
+
+      function stopWave() {
+        clearInterval(waveInterval);
+        waveform.querySelectorAll('.dp-bar').forEach(function(bar) {
+          bar.style.height = '2px';
+          bar.classList.remove('active');
+        });
+      }
+
+      function runDirectorCycle() {
+        // Reset
+        editor.innerHTML = '';
+        goBtn.textContent = 'GO';
+        goBtn.classList.remove('stop');
+        divider.classList.remove('visible');
+        overlay.classList.add('visible');
+        mic.classList.remove('on');
+        notchWords.classList.remove('visible');
+        setNotchSize(collW, collH, collT, collBR);
+        buildNotchWords();
+        stopWave();
+
+        // Phase 1: Type lines (simulated)
+        var typeDelay = 400;
+        lineWidths.forEach(function(w, i) {
+          setTimeout(function() {
+            var line = document.createElement('div');
+            line.className = 'dp-line typing';
+            line.style.setProperty('--tw', w);
+            line.style.background = lineColors[i % lineColors.length];
+            line.style.width = '0';
+            editor.appendChild(line);
+          }, typeDelay + i * 300);
+        });
+
+        // Phase 2: Press Go
+        var goTime = typeDelay + lineWidths.length * 300 + 500;
+        setTimeout(function() {
+          goBtn.textContent = 'STOP';
+          goBtn.classList.add('stop');
+          overlay.classList.remove('visible');
+          mic.classList.add('on');
+
+          // Expand notch
+          animateNotch(collW, collH, collT, collBR, expW, expH, expT, expBR, 500, function() {
+            notchWords.classList.add('visible');
+          });
+
+          startWave();
+        }, goTime);
+
+        // Phase 3: Highlight lines + notch words
+        var readTime = goTime + 800;
+        var lines = [];
+        var totalLines = lineWidths.length;
+        var wordPerLine = Math.ceil(scriptWords.length / totalLines);
+
+        for (var li = 0; li < totalLines; li++) {
+          (function(idx) {
+            setTimeout(function() {
+              lines = editor.querySelectorAll('.dp-line');
+              // Mark previous lines as read
+              for (var j = 0; j < idx; j++) {
+                if (lines[j]) lines[j].classList.add('read');
+                if (lines[j]) lines[j].classList.remove('current');
+              }
+              // Current line
+              if (lines[idx]) {
+                lines[idx].classList.add('current');
+                divider.classList.add('visible');
+              }
+
+              // Notch words
+              var notchSpans = notchWords.querySelectorAll('span');
+              var wordIdx = idx * wordPerLine;
+              for (var w = 0; w < notchSpans.length; w++) {
+                if (w < wordIdx) {
+                  notchSpans[w].className = 'dm-read';
+                } else if (w === wordIdx) {
+                  notchSpans[w].className = 'dm-current';
+                } else {
+                  notchSpans[w].className = '';
+                }
+              }
+            }, readTime + idx * 600);
+          })(li);
+        }
+
+        // Phase 4: Done — collapse
+        var doneTime = readTime + totalLines * 600 + 800;
+        setTimeout(function() {
+          stopWave();
+          mic.classList.remove('on');
+          notchWords.classList.remove('visible');
+          divider.classList.remove('visible');
+
+          // Mark all read
+          var allLines = editor.querySelectorAll('.dp-line');
+          allLines.forEach(function(l) { l.classList.add('read'); l.classList.remove('current'); });
+
+          animateNotch(expW, expH, expT, expBR, collW, collH, collT, collBR, 400, function() {
+            overlay.classList.add('visible');
+          });
+
+          goBtn.textContent = 'GO';
+          goBtn.classList.remove('stop');
+        }, doneTime);
+
+        // Phase 5: Loop
+        setTimeout(function() { runDirectorCycle(); }, doneTime + 2000);
+      }
+
+      setNotchSize(collW, collH, collT, collBR);
+      runDirectorCycle();
+    })();
+    </script>
+
+    <!-- How it works -->
+    <section class="how-it-works">
+      <h2>Up and running in seconds</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>Paste your script</h3>
+          <p>Drop your talking points, interview questions, or full script into the text editor.</p>
+        </div>
+        <div class="step">
+          <h3>Hit the play button</h3>
+          <p>The Dynamic Island overlay slides down from the top of your screen, showing your text.</p>
+        </div>
+        <div class="step">
+          <h3>Start speaking</h3>
+          <p>Words light up in real-time as you read. When you finish, the overlay closes automatically.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section class="cta" id="download">
+      <h2>Download DynoPrompt</h2>
+      <p>Free. No sign-up. Just download, paste your script, and go.</p>
+      <div class="hero-actions">
+        <a href="https://github.com/f/textream/releases/latest" class="btn-primary" data-platform-download>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-platform-download-label>Download for Mac (.dmg)</span>
+        </a>
+        <a href="https://apps.apple.com/app/textream/id6800061488" class="btn-secondary" data-app-store-download>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 13.1c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9-.7 0-1.8-.9-3-.9-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.1 9.3.8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3.1-.7 1.4 0 1.9.7 3.1.7 1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.2-2.6 1.2-2.6-.1 0-2.4-.9-2.4-3.4ZM14.3 5.9c.6-.8 1.1-1.9.9-3-.9 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.2-.5 2.9-1.3Z"/></svg>
+          Download on the App Store
+        </a>
+      </div>
+      <p class="dl-meta download-requirements" data-platform-requirements data-iphone-copy="Requires iOS 26" data-ipad-copy="Requires iPadOS 26">Requires macOS 15 or iOS/iPadOS 26</p>
+    </section>
+
+    <!-- Install via Homebrew -->
+    <div class="install-note" data-desktop-install>
+      <h3>Install via Homebrew</h3>
+      <p>You can also install DynoPrompt using Homebrew:</p>
+      <code>brew install textream</code>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p>Original idea by <a href="https://x.com/semihdev">Semih Kışlar</a> &mdash; thanks to him!</p>
+      <p>Made by <a href="https://fka.dev">Fatih Kadir Akin</a> &middot; <a href="/docs/">Docs</a> &middot; <a href="https://github.com/f/textream">Source on GitHub</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="support.html">Support</a></p>
+    </footer>
+  </div>
+
+  <script>
+    (function adaptDownloadButtonsForAppleMobile() {
+      var userAgent = navigator.userAgent || '';
+      var platform = navigator.platform || '';
+      var isIPad = /iPad/i.test(userAgent) || (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var isIPhone = /iPhone|iPod/i.test(userAgent);
+
+      if (!isIPad && !isIPhone) return;
+
+      var device = isIPad ? 'iPad' : 'iPhone';
+      var requirementKey = isIPad ? 'ipadCopy' : 'iphoneCopy';
+      var appStoreURL = 'https://apps.apple.com/app/textream/id6800061488';
+      var appleIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 13.1c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9-.7 0-1.8-.9-3-.9-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.1 9.3.8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3.1-.7 1.4 0 1.9.7 3.1.7 1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.2-2.6 1.2-2.6-.1 0-2.4-.9-2.4-3.4ZM14.3 5.9c.6-.8 1.1-1.9.9-3-.9 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.2-.5 2.9-1.3Z"/></svg>';
+
+      document.documentElement.dataset.downloadPlatform = device.toLowerCase();
+
+      document.querySelectorAll('[data-platform-download]').forEach(function(link) {
+        link.href = appStoreURL;
+        link.setAttribute('aria-label', 'Download DynoPrompt for ' + device + ' on the App Store');
+        link.querySelector('svg').outerHTML = appleIcon;
+        link.querySelector('[data-platform-download-label]').textContent = 'Download for ' + device;
+      });
+
+      document.querySelectorAll('[data-app-store-download], [data-desktop-install]').forEach(function(element) {
+        element.hidden = true;
+      });
+
+      document.querySelectorAll('[data-platform-requirements]').forEach(function(element) {
+        element.textContent = element.dataset[requirementKey];
+      });
+    })();
+  </script>
+</body>
+</html>

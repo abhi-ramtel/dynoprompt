@@ -1,0 +1,1261 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A30000000000000000000041 /* WhisperService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = A30000000000000000000003 /* WhisperService.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000015 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 446966AC2F37E47300AF141F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1000000000000000000000B;
+			remoteInfo = DynoPromptiOS;
+		};
+		A30000000000000000000050 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 446966AC2F37E47300AF141F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A30000000000000000000004;
+			remoteInfo = WhisperService;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A30000000000000000000040 /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				A30000000000000000000041 /* WhisperService.xpc in Embed XPC Services */,
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		446966B42F37E47300AF141F /* DynoPrompt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DynoPrompt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000001 /* DynoPromptiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DynoPromptiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000002 /* DynoPromptiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DynoPromptiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000003 /* DynoPromptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DynoPromptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000000000000000000003 /* WhisperService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = WhisperService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A30000000000000000000020 /* Exceptions for "WhisperService" folder in "WhisperService" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A30000000000000000000004 /* WhisperService */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		446966B62F37E47300AF141F /* DynoPrompt */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DynoPrompt;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000003 /* DynoPromptiOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DynoPromptiOS;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000004 /* DynoPromptiOSTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DynoPromptiOSTests;
+			sourceTree = "<group>";
+		};
+		A20000000000000000000001 /* DynoPromptCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DynoPromptCore;
+			sourceTree = "<group>";
+		};
+		A20000000000000000000002 /* DynoPromptTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DynoPromptTests;
+			sourceTree = "<group>";
+		};
+		A30000000000000000000001 /* WhisperService */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A30000000000000000000020 /* Exceptions for "WhisperService" folder in "WhisperService" target */,
+			);
+			path = WhisperService;
+			sourceTree = "<group>";
+		};
+		A30000000000000000000002 /* WhisperShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WhisperShared;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		446966B12F37E47300AF141F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A20000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		446966AB2F37E47300AF141F = {
+			isa = PBXGroup;
+			children = (
+				446966B62F37E47300AF141F /* DynoPrompt */,
+				A30000000000000000000001 /* WhisperService */,
+				A30000000000000000000002 /* WhisperShared */,
+				A10000000000000000000003 /* DynoPromptiOS */,
+				A10000000000000000000004 /* DynoPromptiOSTests */,
+				A20000000000000000000001 /* DynoPromptCore */,
+				A20000000000000000000002 /* DynoPromptTests */,
+				446966B52F37E47300AF141F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		446966B52F37E47300AF141F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				446966B42F37E47300AF141F /* DynoPrompt.app */,
+				A10000000000000000000001 /* DynoPromptiOS.app */,
+				A10000000000000000000002 /* DynoPromptiOSTests.xctest */,
+				A20000000000000000000003 /* DynoPromptTests.xctest */,
+				A30000000000000000000003 /* WhisperService.xpc */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		446966B32F37E47300AF141F /* DynoPrompt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 446966C12F37E47400AF141F /* Build configuration list for PBXNativeTarget "DynoPrompt" */;
+			buildPhases = (
+				A30000000000000000000031 /* Fetch speech model */,
+				446966B02F37E47300AF141F /* Sources */,
+				446966B12F37E47300AF141F /* Frameworks */,
+				446966B22F37E47300AF141F /* Resources */,
+				A30000000000000000000040 /* Embed XPC Services */,
+				A30000000000000000000032 /* Embed speech model */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A30000000000000000000051 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				446966B62F37E47300AF141F /* DynoPrompt */,
+				A20000000000000000000001 /* DynoPromptCore */,
+				A30000000000000000000002 /* WhisperShared */,
+			);
+			name = DynoPrompt;
+			packageProductDependencies = (
+			);
+			productName = DynoPrompt;
+			productReference = 446966B42F37E47300AF141F /* DynoPrompt.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1000000000000000000000B /* DynoPromptiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000000000000000000000D /* Build configuration list for PBXNativeTarget "DynoPromptiOS" */;
+			buildPhases = (
+				A10000000000000000000005 /* Sources */,
+				A10000000000000000000006 /* Frameworks */,
+				A10000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000003 /* DynoPromptiOS */,
+			);
+			name = DynoPromptiOS;
+			packageProductDependencies = (
+			);
+			productName = DynoPromptiOS;
+			productReference = A10000000000000000000001 /* DynoPromptiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1000000000000000000000C /* DynoPromptiOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000000000000000000000E /* Build configuration list for PBXNativeTarget "DynoPromptiOSTests" */;
+			buildPhases = (
+				A10000000000000000000008 /* Sources */,
+				A10000000000000000000009 /* Frameworks */,
+				A1000000000000000000000A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000016 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000004 /* DynoPromptiOSTests */,
+			);
+			name = DynoPromptiOSTests;
+			packageProductDependencies = (
+			);
+			productName = DynoPromptiOSTests;
+			productReference = A10000000000000000000002 /* DynoPromptiOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A20000000000000000000004 /* DynoPromptTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A20000000000000000000008 /* Build configuration list for PBXNativeTarget "DynoPromptTests" */;
+			buildPhases = (
+				A20000000000000000000005 /* Sources */,
+				A20000000000000000000006 /* Frameworks */,
+				A20000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A20000000000000000000001 /* DynoPromptCore */,
+				A20000000000000000000002 /* DynoPromptTests */,
+			);
+			name = DynoPromptTests;
+			packageProductDependencies = (
+			);
+			productName = DynoPromptTests;
+			productReference = A20000000000000000000003 /* DynoPromptTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A30000000000000000000004 /* WhisperService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A30000000000000000000008 /* Build configuration list for PBXNativeTarget "WhisperService" */;
+			buildPhases = (
+				A30000000000000000000030 /* Vendor whisper.cpp */,
+				A30000000000000000000005 /* Sources */,
+				A30000000000000000000006 /* Frameworks */,
+				A30000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A30000000000000000000001 /* WhisperService */,
+				A30000000000000000000002 /* WhisperShared */,
+			);
+			name = WhisperService;
+			packageProductDependencies = (
+			);
+			productName = WhisperService;
+			productReference = A30000000000000000000003 /* WhisperService.xpc */;
+			productType = "com.apple.product-type.xpc-service";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		446966AC2F37E47300AF141F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					446966B32F37E47300AF141F = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					A1000000000000000000000B = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					A1000000000000000000000C = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = A1000000000000000000000B;
+					};
+					A20000000000000000000004 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					A30000000000000000000004 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = 446966AF2F37E47300AF141F /* Build configuration list for PBXProject "DynoPrompt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 446966AB2F37E47300AF141F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 446966B52F37E47300AF141F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				446966B32F37E47300AF141F /* DynoPrompt */,
+				A1000000000000000000000B /* DynoPromptiOS */,
+				A1000000000000000000000C /* DynoPromptiOSTests */,
+				A20000000000000000000004 /* DynoPromptTests */,
+				A30000000000000000000004 /* WhisperService */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		446966B22F37E47300AF141F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1000000000000000000000A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A20000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A30000000000000000000030 /* Vendor whisper.cpp */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/vendor-whisper.sh",
+			);
+			name = "Vendor whisper.cpp";
+			outputPaths = (
+				"$(SRCROOT)/ThirdParty/whisper/lib/libwhisper.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"$SRCROOT/Scripts/vendor-whisper.sh\"\n";
+		};
+		A30000000000000000000031 /* Fetch speech model */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/fetch-model.sh",
+			);
+			name = "Fetch speech model";
+			outputPaths = (
+				"$(SRCROOT)/ThirdParty/models/ggml-base.en.bin",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"$SRCROOT/Scripts/fetch-model.sh\"\n";
+		};
+		A30000000000000000000032 /* Embed speech model */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/ThirdParty/models/ggml-base.en.bin",
+			);
+			name = "Embed speech model";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -euo pipefail\nSRC=\"$SRCROOT/ThirdParty/models/ggml-base.en.bin\"\n# The helper is sandboxed and may read its own bundle, but NOT the containing\n# app's Resources, so the model ships inside WhisperService.xpc.\nDEST_DIR=\"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/XPCServices/WhisperService.xpc/Contents/Resources/models\"\n# Record whether whisper.cpp was really vendored or only stubbed, so the app\n# can tell the user the truth instead of blaming their model file.\nSERVICE_DIR=\"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/XPCServices/WhisperService.xpc\"\nSERVICE_RES=\"$SERVICE_DIR/Contents/Resources\"\nif [ -d \"$SERVICE_DIR\" ]; then\n  # The Resources folder may not exist yet when there is no model to\n  # copy, so create it rather than skipping the marker.\n  mkdir -p \"$SERVICE_RES\"\n  rm -f \"$SERVICE_RES/.whisper-stub\"\n  if [ -f \"$SRCROOT/ThirdParty/whisper/.stub\" ]; then\n    : > \"$SERVICE_RES/.whisper-stub\"\n  fi\nfi\nif [ ! -f \"$SRC\" ]; then\n  echo \"warning: ggml-base.en.bin not found; run Scripts/fetch-model.sh. Falling back to an external whisper.cpp install at runtime.\"\n  exit 0\nfi\nif [ ! -d \"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/XPCServices/WhisperService.xpc\" ]; then\n  echo \"warning: WhisperService.xpc not embedded; skipping model copy.\"\n  exit 0\nfi\nmkdir -p \"$DEST_DIR\"\n# Copy only when changed: the model is ~141 MB and this phase runs every build.\nif [ ! -f \"$DEST_DIR/ggml-base.en.bin\" ] || [ \"$SRC\" -nt \"$DEST_DIR/ggml-base.en.bin\" ]; then\n  cp \"$SRC\" \"$DEST_DIR/ggml-base.en.bin\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		446966B02F37E47300AF141F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A20000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000016 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1000000000000000000000B /* DynoPromptiOS */;
+			targetProxy = A10000000000000000000015 /* PBXContainerItemProxy */;
+		};
+		A30000000000000000000051 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A30000000000000000000004 /* WhisperService */;
+			targetProxy = A30000000000000000000050 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		446966BF2F37E47400AF141F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		446966C02F37E47400AF141F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = RJA7656U34;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		446966C22F37E47400AF141F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = DynoPrompt/DynoPrompt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = JN3A2YYC53;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DynoPrompt;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Fatih Kadir Akın";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "DynoPrompt lets nearby devices view or control your teleprompter over your local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "DynoPrompt needs microphone access to listen to your speech and highlight words as you read them.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "DynoPrompt uses speech recognition to follow along as you read and highlight the current word. Recognition runs on this Mac by default and your audio is not uploaded.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.7.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		446966C32F37E47400AF141F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DynoPrompt;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Fatih Kadir Akın";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "DynoPrompt lets nearby devices view or control your teleprompter over your local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "DynoPrompt needs microphone access to listen to your speech and highlight words as you read them.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "DynoPrompt uses speech recognition to follow along as you read and highlight the current word. Recognition runs on this Mac by default and your audio is not uploaded.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.7.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		446966C42F37E47400AF141F /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = RJA7656U34;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = AppStore;
+		};
+		446966C52F37E47400AF141F /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = DynoPrompt/DynoPrompt.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = JN3A2YYC53;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DynoPrompt;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Fatih Kadir Akın";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "DynoPrompt lets nearby devices view or control your teleprompter over your local network.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "DynoPrompt needs microphone access to listen to your speech and highlight words as you read them.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "DynoPrompt uses speech recognition to follow along as you read and highlight the current word. Recognition runs on this Mac by default and your audio is not uploaded.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.7.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "APP_STORE $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = AppStore;
+		};
+		A1000000000000000000000F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DynoPromptiOS-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DynoPrompt;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A10000000000000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DynoPromptiOS-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DynoPrompt;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A10000000000000000000011 /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DynoPromptiOS-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DynoPrompt;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = AppStore;
+		};
+		A10000000000000000000012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.iosTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DynoPromptiOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DynoPromptiOS";
+			};
+			name = Debug;
+		};
+		A10000000000000000000013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.iosTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DynoPromptiOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DynoPromptiOS";
+			};
+			name = Release;
+		};
+		A10000000000000000000014 /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RJA7656U34;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.iosTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DynoPromptiOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DynoPromptiOS";
+			};
+			name = AppStore;
+		};
+		A20000000000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A2000000000000000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A2000000000000000000000B /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = AppStore;
+		};
+		A30000000000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WhisperService/WhisperService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JN3A2YYC53;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/whisper/include";
+				INFOPLIST_FILE = WhisperService/Info.plist;
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/whisper/lib";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lwhisper",
+					"-lggml",
+					"-lggml-base",
+					"-lggml-cpu",
+					"-lggml-metal",
+					"-lggml-blas",
+					"-lobjc",
+					"-lc++",
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
+					"-framework",
+					Accelerate,
+					"-framework",
+					Foundation,
+					"-framework",
+					CoreGraphics,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.WhisperService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/WhisperService/CWhisper";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A3000000000000000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WhisperService/WhisperService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JN3A2YYC53;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/whisper/include";
+				INFOPLIST_FILE = WhisperService/Info.plist;
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/whisper/lib";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lwhisper",
+					"-lggml",
+					"-lggml-base",
+					"-lggml-cpu",
+					"-lggml-metal",
+					"-lggml-blas",
+					"-lobjc",
+					"-lc++",
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
+					"-framework",
+					Accelerate,
+					"-framework",
+					Foundation,
+					"-framework",
+					CoreGraphics,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.WhisperService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/WhisperService/CWhisper";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A3000000000000000000000B /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WhisperService/WhisperService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JN3A2YYC53;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/whisper/include";
+				INFOPLIST_FILE = WhisperService/Info.plist;
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/whisper/lib";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lwhisper",
+					"-lggml",
+					"-lggml-base",
+					"-lggml-cpu",
+					"-lggml-metal",
+					"-lggml-blas",
+					"-lobjc",
+					"-lc++",
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
+					"-framework",
+					Accelerate,
+					"-framework",
+					Foundation,
+					"-framework",
+					CoreGraphics,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fka.dynoprompt.WhisperService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/WhisperService/CWhisper";
+				SWIFT_VERSION = 5.0;
+			};
+			name = AppStore;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		446966AF2F37E47300AF141F /* Build configuration list for PBXProject "DynoPrompt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				446966BF2F37E47400AF141F /* Debug */,
+				446966C02F37E47400AF141F /* Release */,
+				446966C42F37E47400AF141F /* AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		446966C12F37E47400AF141F /* Build configuration list for PBXNativeTarget "DynoPrompt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				446966C22F37E47400AF141F /* Debug */,
+				446966C32F37E47400AF141F /* Release */,
+				446966C52F37E47400AF141F /* AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000000000000000000000D /* Build configuration list for PBXNativeTarget "DynoPromptiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000000000000000000000F /* Debug */,
+				A10000000000000000000010 /* Release */,
+				A10000000000000000000011 /* AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000000000000000000000E /* Build configuration list for PBXNativeTarget "DynoPromptiOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000012 /* Debug */,
+				A10000000000000000000013 /* Release */,
+				A10000000000000000000014 /* AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A20000000000000000000008 /* Build configuration list for PBXNativeTarget "DynoPromptTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A20000000000000000000009 /* Debug */,
+				A2000000000000000000000A /* Release */,
+				A2000000000000000000000B /* AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A30000000000000000000008 /* Build configuration list for PBXNativeTarget "WhisperService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A30000000000000000000009 /* Debug */,
+				A3000000000000000000000A /* Release */,
+				A3000000000000000000000B /* AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 446966AC2F37E47300AF141F /* Project object */;
+}

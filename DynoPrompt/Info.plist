@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ATSApplicationFontsPath</key>
+	<string>.</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>DynoPrompt Script</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>dev.fka.dynoprompt.document</string>
+			</array>
+		</dict>
+		<!-- Scripts saved by Textream, this app's former name. Same JSON
+		     payload, so they open and re-save without conversion. -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Textream Document (Legacy)</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>dev.fka.textream.document</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>DynoPrompt Script</string>
+			<key>UTTypeIdentifier</key>
+			<string>dev.fka.dynoprompt.document</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>dynoprompt</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<!-- Imported rather than exported: the legacy type belongs to the old
+	     bundle identifier, so this app claims the ability to open it without
+	     claiming to define it. -->
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Textream Document</string>
+			<key>UTTypeIdentifier</key>
+			<string>dev.fka.textream.document</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>textream</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.fka.dynoprompt</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dynoprompt</string>
+				<!-- Deep links created before the rename keep working. -->
+				<string>textream</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Read in DynoPrompt</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>readInDynoPrompt</string>
+			<key>NSPortName</key>
+			<string>DynoPrompt</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>public.utf8-plain-text</string>
+			</array>
+		</dict>
+	</array>
+	<!-- "owner/repo" on GitHub that the update checker queries. Empty disables
+	     the check: this app is a rename, so pointing it at the upstream
+	     project's releases would offer the wrong application. Set it once you
+	     publish your own releases. -->
+	<key>DPUpdateRepository</key>
+	<string></string>
+</dict>
+</plist>

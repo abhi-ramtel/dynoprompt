@@ -1,0 +1,1862 @@
+//
+//  SettingsView.swift
+//  DynoPrompt
+//
+//  Created by Fatih Kadir Akın on 8.02.2026.
+//
+
+import SwiftUI
+import AppKit
+import Speech
+import Combine
+import CoreImage.CIFilterBuiltins
+
+// MARK: - Preview Panel Controller
+
+class NotchPreviewController {
+    private var panel: NSPanel?
+    private var hostingView: NSHostingView<NotchPreviewContent>?
+    private var originalFrame: NSRect?
+    private var cursorTimer: AnyCancellable?
+    private var trackingSettings: NotchSettings?
+
+    func show(settings: NotchSettings) {
+        // If panel already exists, just re-show it
+        if let panel {
+            panel.orderFront(nil)
+            return
+        }
+
+        guard let screen = NSScreen.main else { return }
+        let screenFrame = screen.frame
+        let visibleFrame = screen.visibleFrame
+        let menuBarHeight = screenFrame.maxY - visibleFrame.maxY
+
+        let maxWidth = NotchSettings.maxWidth
+        let maxHeight = menuBarHeight + NotchSettings.maxHeight + 40
+
+        let xPosition = screenFrame.midX - maxWidth / 2
+        let yPosition = screenFrame.maxY - maxHeight
+
+        let content = NotchPreviewContent(settings: settings, menuBarHeight: menuBarHeight)
+        let hostingView = NSHostingView(rootView: content)
+        self.hostingView = hostingView
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: xPosition, y: yPosition, width: maxWidth, height: maxHeight),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.level = .statusBar
+        panel.ignoresMouseEvents = true
+        panel.contentView = hostingView
+        panel.orderFront(nil)
+        self.panel = panel
+    }
+
+    func hide() {
+        panel?.orderOut(nil)
+    }
+
+    func dismiss() {
+        stopCursorTracking()
+        panel?.orderOut(nil)
+        panel = nil
+        hostingView = nil
+        originalFrame = nil
+    }
+
+    var isAtCursor: Bool { originalFrame != nil }
+
+    func animateToCursor(settings: NotchSettings) {
+        guard let panel else { return }
+        if originalFrame == nil {
+            originalFrame = panel.frame
+        }
+        trackingSettings = settings
+
+        // Animate to cursor, then start continuous tracking
+        let target = cursorFrame(for: panel, settings: settings)
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.5
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(target, display: true)
+        }, completionHandler: { [weak self] in
+            self?.startCursorTracking()
+        })
+    }
+
+    func animateFromCursor() {
+        stopCursorTracking()
+        guard let panel, let originalFrame else { return }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.5
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(originalFrame, display: true)
+        }
+        self.originalFrame = nil
+        self.trackingSettings = nil
+    }
+
+    private func cursorFrame(for panel: NSPanel, settings: NotchSettings) -> NSRect {
+        let mouse = NSEvent.mouseLocation
+        let cursorOffset: CGFloat = 8
+        let screenEdgeMargin: CGFloat = 5
+        let floatingTopPadding: CGFloat = 14
+        let floatingVerticalOffset: CGFloat = 60
+        let maxWidth = panel.frame.width
+        let notchWidth = settings.notchWidth
+        let panelHeight = panel.frame.height
+        let visibleHeight = floatingTopPadding + settings.textAreaHeight
+        let horizontalInset = (maxWidth - notchWidth) / 2
+
+        var visibleLeft = mouse.x + cursorOffset
+        var visibleBottom = mouse.y - visibleHeight
+
+        if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) })
+            ?? panel.screen
+            ?? NSScreen.main {
+            let screenFrame = screen.frame
+            let minimumVisibleLeft = screenFrame.minX + screenEdgeMargin
+            let maximumVisibleLeft = max(
+                minimumVisibleLeft,
+                screenFrame.maxX - notchWidth - screenEdgeMargin
+            )
+            visibleLeft = min(max(visibleLeft, minimumVisibleLeft), maximumVisibleLeft)
+            visibleBottom = max(visibleBottom, screenFrame.minY + screenEdgeMargin)
+        }
+
+        let panelX = visibleLeft - horizontalInset
+        let panelY = visibleBottom - (panelHeight - floatingVerticalOffset - visibleHeight)
+        return NSRect(x: panelX, y: panelY, width: maxWidth, height: panelHeight)
+    }
+
+    private func startCursorTracking() {
+        cursorTimer?.cancel()
+        cursorTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.updatePreviewPosition()
+            }
+    }
+
+    private func stopCursorTracking() {
+        cursorTimer?.cancel()
+        cursorTimer = nil
+    }
+
+    private func updatePreviewPosition() {
+        guard let panel, let settings = trackingSettings else { return }
+        let target = cursorFrame(for: panel, settings: settings)
+        panel.setFrame(target, display: false)
+    }
+}
+
+struct NotchPreviewContent: View {
+    @Bindable var settings: NotchSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let menuBarHeight: CGFloat
+
+    private static let previewText = """
+    Good morning, and thank you for being here. [smile]
+
+    Today I want to share a simple idea: clear communication begins when we slow down and connect with one person at a time. The words matter, but the space between them matters too. [pause]
+
+    Take a breath, look into the camera, and let each sentence land. [look at camera] When we speak with calm and purpose, even a complex message becomes easier to understand.
+
+    So keep your pace steady, trust the story, and bring the message home. Thank you for listening. [nod]
+    """
+    private static let previewWords = splitTextIntoWords(previewText)
+    private static let paragraphBreaks = paragraphBreakWordIndices(in: previewText)
+    private static let wordTrackingAnchorWordIndex = 18
+    private static let highlightedCount = previewWords
+        .prefix(wordTrackingAnchorWordIndex)
+        .reduce(0) { $0 + $1.count + 1 }
+
+    @State private var previewWordProgress = 0.0
+    @State private var previewCycle = 0
+    private let scrollTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+
+    // Phase 1: corners flatten (0=concave, 1=squared)
+    @State private var cornerPhase: CGFloat = 0
+    // Phase 2: detach from top (0=stuck to top, 1=moved down + rounded)
+    @State private var offsetPhase: CGFloat = 0
+
+    private var readingPreviewLayoutIdentity: String {
+        [
+            settings.listeningMode.rawValue,
+            settings.fontFamilyPreset.rawValue,
+            settings.fontSizePreset.rawValue,
+            settings.showParagraphDividers ? "dividers" : "continuous"
+        ].joined(separator: "|")
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let topPadding = menuBarHeight * (1 - offsetPhase) + 14 * offsetPhase
+            let contentHeight = topPadding + settings.textAreaHeight
+            let currentWidth = settings.notchWidth
+            let yOffset = 60 * offsetPhase
+            let isPinned = settings.overlayMode == .pinned
+            // Match the compact live notch's text viewport. Its bottom controls
+            // and resize handle consume 24 + 8 + 2 + 10 points even though the
+            // settings preview deliberately leaves that chrome invisible.
+            let pinnedBottomChromeHeight: CGFloat = isPinned ? 44 : 0
+            let outerHorizontalPadding: CGFloat = isPinned ? 16 : 20
+            let textHorizontalPadding: CGFloat = isPinned ? 12 : 16
+            let textTopPadding: CGFloat = isPinned ? 6 : 10
+
+            ZStack(alignment: .top) {
+                // Shape: concave corners flatten via cornerPhase, then cross-fade to rounded via offsetPhase
+                let isTransparent = settings.overlayTransparency && settings.overlayMode == .pinned
+                Group {
+                    if isTransparent {
+                        ZStack {
+                            NotchBlurView()
+                            DynamicIslandShape(
+                                topInset: 16 * (1 - cornerPhase),
+                                bottomRadius: 18
+                            )
+                            .fill(.black.opacity(1.0 - settings.overlayTransparencyOpacity))
+                        }
+                        .clipShape(DynamicIslandShape(
+                            topInset: 16 * (1 - cornerPhase),
+                            bottomRadius: 18
+                        ))
+                    } else {
+                        DynamicIslandShape(
+                            topInset: 16 * (1 - cornerPhase),
+                            bottomRadius: 18
+                        )
+                        .fill(.black)
+                    }
+                }
+                .opacity(Double(1 - offsetPhase))
+                .frame(width: currentWidth, height: contentHeight)
+
+                Group {
+                    if settings.floatingGlassEffect {
+                        ZStack {
+                            GlassEffectView()
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(.black.opacity(settings.glassOpacity))
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    } else {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.black)
+                    }
+                }
+                .opacity(Double(offsetPhase))
+                .frame(width: currentWidth, height: contentHeight)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Spacer()
+                        if settings.showElapsedTime {
+                            ElapsedTimeView(fontSize: 11)
+                                .padding(.trailing, 12)
+                        }
+                    }
+                    .frame(height: topPadding)
+
+                    SpeechScrollView(
+                        words: Self.previewWords,
+                        highlightedCharCount: settings.listeningMode == .wordTracking
+                            ? Self.highlightedCount
+                            : Self.previewWords.count * 5,
+                        font: settings.font,
+                        highlightColor: settings.fontColorPreset.color,
+                        cueColor: settings.cueColorPreset.color,
+                        cueUnreadOpacity: settings.cueBrightness.unreadOpacity,
+                        cueReadOpacity: settings.cueBrightness.readOpacity,
+                        smoothScroll: settings.listeningMode != .wordTracking,
+                        smoothWordProgress: previewWordProgress,
+                        isListening: true,
+                        readingPosition: settings.readingPosition,
+                        readingPositionTransitionDuration: reduceMotion ? 0 : 0.28,
+                        paragraphBreakBeforeWordIndices: settings.showParagraphDividers
+                            ? Self.paragraphBreaks
+                            : []
+                    )
+                    .id("\(readingPreviewLayoutIdentity)|\(previewCycle)")
+                    .padding(.horizontal, textHorizontalPadding)
+                    .padding(.top, textTopPadding)
+
+                    Color.clear
+                        .frame(height: pinnedBottomChromeHeight)
+                }
+                .padding(.horizontal, outerHorizontalPadding)
+                .frame(width: currentWidth, height: contentHeight)
+            }
+            .frame(width: currentWidth, height: contentHeight, alignment: .top)
+            .offset(y: yOffset)
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+            .animation(.easeInOut(duration: 0.15), value: settings.notchWidth)
+            .animation(.easeInOut(duration: 0.15), value: settings.textAreaHeight)
+        }
+        .onChange(of: settings.overlayMode) { _, mode in
+            if mode == .floating {
+                // Phase 1: flatten corners while at top
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    cornerPhase = 1
+                }
+                // Phase 2: move down + round corners
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                        offsetPhase = 1
+                    }
+                }
+            } else {
+                // Reverse Phase 1: move back up to top
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    offsetPhase = 0
+                }
+                // Reverse Phase 2: restore concave corners
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        cornerPhase = 0
+                    }
+                }
+            }
+        }
+        .onAppear {
+            let isFloating = settings.overlayMode == .floating
+            cornerPhase = isFloating ? 1 : 0
+            offsetPhase = isFloating ? 1 : 0
+        }
+        .onReceive(scrollTimer) { _ in
+            guard settings.listeningMode != .wordTracking else { return }
+            let wordCount = Double(Self.previewWords.count)
+            let nextProgress = previewWordProgress + settings.scrollSpeed * 0.05
+            if nextProgress >= wordCount {
+                previewWordProgress = 0
+                previewCycle &+= 1
+            } else {
+                previewWordProgress = nextProgress
+            }
+        }
+        .onChange(of: readingPreviewLayoutIdentity) { _, _ in
+            previewWordProgress = 0
+            previewCycle &+= 1
+        }
+    }
+}
+
+// MARK: - Settings Tabs
+
+// The model library is presented from the Guidance tab.
+extension SettingsView {
+    var modelManagerSheet: some View {
+        ModelManagerView(manager: SpeechModelManager.shared, settings: settings)
+    }
+}
+
+enum SettingsTab: String, CaseIterable, Identifiable {
+    case appearance, guidance, reading, teleprompter, external, browser, director
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .appearance: return "Appearance"
+        case .guidance:   return "Guidance"
+        case .reading:    return "Reading"
+        case .teleprompter: return "Teleprompter"
+        case .external:   return "External"
+        case .browser:    return "Remote"
+        case .director:   return "Director"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .appearance: return "paintpalette"
+        case .guidance:   return "waveform"
+        case .reading:    return "book"
+        case .teleprompter: return "macwindow"
+        case .external:   return "rectangle.on.rectangle"
+        case .browser:    return "antenna.radiowaves.left.and.right"
+        case .director:   return "megaphone"
+        }
+    }
+}
+
+// MARK: - Settings View
+
+struct SettingsView: View {
+    @Bindable var settings: NotchSettings
+    @Environment(\.dismiss) private var dismiss
+    @State private var previewController = NotchPreviewController()
+    @State private var selectedTab: SettingsTab = .appearance
+    @State private var showResetConfirmation = false
+    @State var showModelManager = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Sidebar
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Settings")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .textCase(.uppercase)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 6)
+
+                ForEach(SettingsTab.allCases) { tab in
+                    Button {
+                        selectedTab = tab
+                    } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 12, weight: .medium))
+                                .frame(width: 16)
+                            Text(tab.label)
+                                .font(.system(size: 13, weight: .regular))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(selectedTab == tab ? Color.accentColor.opacity(0.15) : Color.clear)
+                        .foregroundStyle(selectedTab == tab ? Color.accentColor : .primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+            }
+            .padding(12)
+            .frame(width: 155)
+            .frame(maxHeight: .infinity)
+            .background(Color.primary.opacity(0.04))
+
+            Divider()
+
+            // Content
+            VStack(spacing: 0) {
+                switch selectedTab {
+                case .appearance:
+                    appearanceTab
+                case .guidance:
+                    guidanceTab
+                case .reading:
+                    readingTab
+                case .teleprompter:
+                    teleprompterTab
+                case .external:
+                    externalTab
+                case .browser:
+                    browserTab
+                case .director:
+                    directorTab
+                }
+
+                Divider()
+
+                HStack {
+                    Button("Reset All") {
+                        showResetConfirmation = true
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .controlSize(.regular)
+
+                    Spacer()
+
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                }
+                .padding(12)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .frame(width: 500)
+        .frame(minHeight: 280, maxHeight: 500)
+        .background(.ultraThinMaterial)
+        .sheet(isPresented: $showModelManager) {
+            modelManagerSheet
+        }
+        .alert("Reset All Settings?", isPresented: $showResetConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    resetAllSettings()
+                }
+            }
+        } message: {
+            Text("This will restore all settings to their defaults.")
+        }
+        .onAppear {
+            if settings.overlayMode != .fullscreen {
+                previewController.show(settings: settings)
+                if settings.followCursorWhenUndocked && settings.overlayMode == .floating {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        previewController.animateToCursor(settings: settings)
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            previewController.dismiss()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            previewController.hide()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            if settings.overlayMode != .fullscreen {
+                previewController.show(settings: settings)
+                if settings.followCursorWhenUndocked && settings.overlayMode == .floating {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        previewController.animateToCursor(settings: settings)
+                    }
+                }
+            }
+        }
+        .onChange(of: settings.followCursorWhenUndocked) { _, follow in
+            if follow && settings.overlayMode == .floating {
+                previewController.animateToCursor(settings: settings)
+            } else {
+                previewController.animateFromCursor()
+            }
+        }
+        .onChange(of: settings.overlayMode) { _, mode in
+            if mode == .fullscreen {
+                previewController.hide()
+            } else {
+                previewController.show(settings: settings)
+                if mode == .floating && settings.followCursorWhenUndocked {
+                    previewController.animateToCursor(settings: settings)
+                } else if previewController.isAtCursor {
+                    previewController.animateFromCursor()
+                }
+            }
+        }
+    }
+
+    // MARK: - Appearance Tab
+
+    private var appearanceTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                // Font Family
+                Text("Font")
+                    .font(.system(size: 13, weight: .medium))
+
+                HStack(spacing: 8) {
+                    ForEach(FontFamilyPreset.allCases) { preset in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                settings.fontFamilyPreset = preset
+                            }
+                        } label: {
+                            VStack(spacing: 6) {
+                                Text("Ag")
+                                    .font(Font(preset.font(size: 16)))
+                                    .foregroundStyle(settings.fontFamilyPreset == preset ? Color.accentColor : .primary)
+                                Text(preset.label)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(settings.fontFamilyPreset == preset ? Color.accentColor : .secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(settings.fontFamilyPreset == preset ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(settings.fontFamilyPreset == preset ? Color.accentColor.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Text Size — continuous, with the presets as quick picks.
+                HStack {
+                    Text("Size")
+                        .font(.system(size: 13, weight: .medium))
+                    Spacer()
+                    measurementField(
+                        value: $settings.fontSize,
+                        range: NotchSettings.minFontSize...NotchSettings.maxFontSize,
+                        unit: "pt"
+                    )
+                }
+
+                Slider(
+                    value: $settings.fontSize,
+                    in: NotchSettings.minFontSize...NotchSettings.maxFontSize,
+                    step: 1
+                )
+                .controlSize(.small)
+
+                HStack(spacing: 8) {
+                    ForEach(FontSizePreset.allCases) { preset in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                settings.fontSizePreset = preset
+                            }
+                        } label: {
+                            VStack(spacing: 6) {
+                                Text("Ag")
+                                    .font(Font(settings.fontFamilyPreset.font(size: preset.pointSize * 0.7)))
+                                    .foregroundStyle(settings.fontSizePreset == preset ? Color.accentColor : .primary)
+                                Text(preset.label)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(settings.fontSizePreset == preset ? Color.accentColor : .secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(settings.fontSizePreset == preset ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(settings.fontSizePreset == preset ? Color.accentColor.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Line Spacing
+                HStack {
+                    Text("Line Spacing")
+                        .font(.system(size: 13, weight: .medium))
+                    Spacer()
+                    Text(String(format: "%.2f×", settings.lineSpacingMultiplier))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+
+                Slider(
+                    value: $settings.lineSpacingMultiplier,
+                    in: NotchSettings.minLineSpacing...NotchSettings.maxLineSpacing,
+                    step: 0.05
+                )
+                .controlSize(.small)
+
+                Divider()
+
+                // Highlight Color
+                Text("Highlight Color")
+                    .font(.system(size: 13, weight: .medium))
+
+                HStack(spacing: 8) {
+                    ForEach(FontColorPreset.allCases) { preset in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                settings.fontColorPreset = preset
+                            }
+                        } label: {
+                            VStack(spacing: 6) {
+                                Circle()
+                                    .fill(preset.color)
+                                    .frame(width: 22, height: 22)
+                                    .overlay(
+                                        Circle()
+                                            .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                    )
+                                    .overlay(
+                                        settings.fontColorPreset == preset
+                                            ? Image(systemName: "checkmark")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(preset == .white ? .black : .white)
+                                            : nil
+                                    )
+                                Text(preset.label)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(settings.fontColorPreset == preset ? .primary : .secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(settings.fontColorPreset == preset ? preset.color.opacity(0.1) : Color.primary.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(settings.fontColorPreset == preset ? preset.color.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Cue Color
+                Text("Cue Color")
+                    .font(.system(size: 13, weight: .medium))
+
+                HStack(spacing: 8) {
+                    ForEach(FontColorPreset.allCases) { preset in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                settings.cueColorPreset = preset
+                            }
+                        } label: {
+                            VStack(spacing: 6) {
+                                Circle()
+                                    .fill(preset.color)
+                                    .frame(width: 22, height: 22)
+                                    .overlay(
+                                        Circle()
+                                            .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                    )
+                                    .overlay(
+                                        settings.cueColorPreset == preset
+                                            ? Image(systemName: "checkmark")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(preset == .white ? .black : .white)
+                                            : nil
+                                    )
+                                Text(preset.label)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(settings.cueColorPreset == preset ? .primary : .secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(settings.cueColorPreset == preset ? preset.color.opacity(0.1) : Color.primary.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(settings.cueColorPreset == preset ? preset.color.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Cue Brightness
+                Text("Cue Brightness")
+                    .font(.system(size: 13, weight: .medium))
+
+                Picker("", selection: $settings.cueBrightness) {
+                    ForEach(CueBrightness.allCases) { brightness in
+                        Text(brightness.label).tag(brightness)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                Divider()
+
+                // Dimensions
+                Text("Dimensions")
+                    .font(.system(size: 13, weight: .medium))
+
+                VStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Width")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            measurementField(
+                                value: $settings.notchWidth,
+                                range: NotchSettings.minWidth...NotchSettings.maxWidth,
+                                unit: "px"
+                            )
+                        }
+                        Slider(
+                            value: $settings.notchWidth,
+                            in: NotchSettings.minWidth...NotchSettings.maxWidth,
+                            step: 5
+                        )
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Height")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            measurementField(
+                                value: $settings.textAreaHeight,
+                                range: NotchSettings.minHeight...NotchSettings.maxHeight,
+                                unit: "px"
+                            )
+                        }
+                        Slider(
+                            value: $settings.textAreaHeight,
+                            in: NotchSettings.minHeight...NotchSettings.maxHeight,
+                            step: 5
+                        )
+                    }
+
+                    // Sizes beyond the current display are allowed but clamped
+                    // when the overlay is laid out, so say so rather than
+                    // letting the preview and reality disagree.
+                    if let screen = NSScreen.main {
+                        let widthLimit = NotchSettings.maximumWidth(for: screen)
+                        let heightLimit = NotchSettings.maximumHeight(for: screen)
+                        if settings.notchWidth > widthLimit || settings.textAreaHeight > heightLimit {
+                            Text("Larger than this display — the overlay will fit itself to the screen.")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.orange)
+                        }
+                    }
+
+                    HStack(spacing: 8) {
+                        Button("Fit Width") {
+                            settings.notchWidth = NotchSettings.maximumWidth(for: NSScreen.main)
+                        }
+                        Button("Reset Size") {
+                            settings.notchWidth = NotchSettings.defaultWidth
+                            settings.textAreaHeight = NotchSettings.defaultHeight
+                        }
+                    }
+                    .controlSize(.small)
+                    .font(.system(size: 11))
+                }
+            }
+            .padding(16)
+        }
+    }
+
+    // MARK: - Guidance Tab
+
+    private var guidanceTab: some View {
+        // Scrolls like every other tab. Without this the content below the
+        // sheet's height is simply unreachable — which hid the speech engine
+        // and model controls entirely once they were added.
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+            Picker("", selection: $settings.listeningMode) {
+                ForEach(ListeningMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text(settings.listeningMode.description)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            if settings.listeningMode == .wordTracking {
+                Divider()
+                speechEngineSection
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Speech Language")
+                        .font(.system(size: 13, weight: .medium))
+                    Picker("", selection: $settings.speechLocale) {
+                        ForEach(SFSpeechRecognizer.supportedLocales().sorted(by: { $0.identifier < $1.identifier }), id: \.identifier) { locale in
+                            Text(Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier)
+                                .tag(locale.identifier)
+                        }
+                    }
+                    .labelsHidden()
+                }
+            }
+
+            if settings.listeningMode != .classic {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Microphone")
+                        .font(.system(size: 13, weight: .medium))
+                    Picker("", selection: $settings.selectedMicUID) {
+                        Text("System Default").tag("")
+                        ForEach(availableMics) { mic in
+                            Text(mic.name).tag(mic.uid)
+                        }
+                    }
+                    .labelsHidden()
+                }
+            }
+
+            if settings.listeningMode != .wordTracking {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Scroll Speed")
+                            .font(.system(size: 13, weight: .medium))
+                        Spacer()
+                        Text(String(format: "%.1f words/s", settings.scrollSpeed))
+                            .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(
+                        value: $settings.scrollSpeed,
+                        in: 0.5...8,
+                        step: 0.5
+                    )
+                    HStack {
+                        Text("Slower")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                        Text("Faster")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear { availableMics = AudioInputDevice.allInputDevices() }
+    }
+
+    @State private var availableMics: [AudioInputDevice] = []
+
+    // MARK: - Reading Tab
+
+    private var readingTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Reading Position")
+                            .font(.system(size: 13, weight: .medium))
+                        Spacer()
+                        Picker("Reading Position", selection: $settings.readingPosition) {
+                            ForEach(ReadingPosition.allCases) { position in
+                                Text(position.label).tag(position)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(width: 190)
+                    }
+
+                    Text("Near Top keeps the previous line visible above the active line.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                Divider()
+
+                Toggle(isOn: $settings.showParagraphDividers) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Show Paragraph Dividers")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Separate source line breaks with extra space and three centered dots.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.checkbox)
+
+                Toggle(isOn: $settings.showLastSpokenWords) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Show Last Spoken Words")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Display recently recognized words while using Word Tracking.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.checkbox)
+
+                Toggle(isOn: $settings.keepScreenAwake) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Keep Screen Awake")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Prevent display and system sleep while the teleprompter is active.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.checkbox)
+            }
+            .padding(16)
+        }
+    }
+
+    // MARK: - Teleprompter Tab
+
+    @State private var overlayScreens: [NSScreen] = []
+
+    private var teleprompterTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                // Overlay mode picker
+                Picker("", selection: $settings.overlayMode) {
+                    ForEach(OverlayMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                Text(settings.overlayMode.description)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+
+                if settings.overlayMode == .pinned {
+                    Divider()
+
+                    Text("Display")
+                        .font(.system(size: 13, weight: .medium))
+
+                    Picker("", selection: $settings.notchDisplayMode) {
+                        ForEach(NotchDisplayMode.allCases) { mode in
+                            Text(mode.label).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+
+                    Text(settings.notchDisplayMode.description)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+
+                    if settings.notchDisplayMode == .fixedDisplay {
+                        displayPicker(
+                            screens: overlayScreens,
+                            selectedID: $settings.pinnedScreenID,
+                            onRefresh: { refreshOverlayScreens() }
+                        )
+                    }
+
+                    Divider()
+
+                    Toggle(isOn: $settings.overlayTransparency) {
+                        Text("Transparency")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    Text("Makes the overlay see-through so desktop content shows through.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+
+                    if settings.overlayTransparency {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Amount")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text("\(Int(settings.overlayTransparencyOpacity * 100))%")
+                                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Slider(
+                                value: $settings.overlayTransparencyOpacity,
+                                in: 0.2...0.95,
+                                step: 0.05
+                            )
+                            HStack {
+                                Text("More transparent")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                                Spacer()
+                                Text("Less transparent")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+
+                if settings.overlayMode == .floating {
+                    Divider()
+
+                    Toggle(isOn: $settings.followCursorWhenUndocked) {
+                        Text("Follow Cursor")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    Text("The window follows your cursor and sticks to its bottom-right.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
+                    Toggle(isOn: $settings.floatingGlassEffect) {
+                        Text("Glass Effect")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    if settings.floatingGlassEffect {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Opacity")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text("\(Int(settings.glassOpacity * 100))%")
+                                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Slider(
+                                value: $settings.glassOpacity,
+                                in: 0.0...0.6,
+                                step: 0.05
+                            )
+                        }
+                    }
+                }
+
+                if settings.overlayMode == .fullscreen {
+                    Divider()
+
+                    Text("Display")
+                        .font(.system(size: 13, weight: .medium))
+
+                    displayPicker(
+                        screens: overlayScreens,
+                        selectedID: $settings.fullscreenScreenID,
+                        onRefresh: { refreshOverlayScreens() }
+                    )
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "escape")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Text("Press Esc to stop the teleprompter.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.primary.opacity(0.04))
+                    )
+                }
+
+                Divider()
+
+                // Options
+                Toggle(isOn: $settings.showElapsedTime) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Elapsed Time")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Display a running timer while the teleprompter is active.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.checkbox)
+
+                Toggle(isOn: $settings.hideFromScreenShare) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Hide from Screen Sharing")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Hide the overlay from screen recordings and video calls.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.checkbox)
+
+                Divider()
+
+                // Pagination
+                Text("Pagination")
+                    .font(.system(size: 13, weight: .semibold))
+
+                Toggle(isOn: $settings.autoNextPage) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Auto Next Page")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Automatically advance to the next page after a countdown.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.checkbox)
+
+                if settings.autoNextPage {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Countdown")
+                            .font(.system(size: 13))
+                        Picker("Countdown", selection: $settings.autoNextPageDelay) {
+                            Text("Instant").tag(0)
+                            Text("1 second").tag(1)
+                            Text("3 seconds").tag(3)
+                            Text("5 seconds").tag(5)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                }
+            }
+            .padding(16)
+        }
+        .onAppear { refreshOverlayScreens() }
+    }
+
+    // MARK: - External Tab
+
+    @State private var availableScreens: [NSScreen] = []
+
+    private var externalTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+            Text("Show the teleprompter on an external display or Sidecar iPad.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: $settings.externalDisplayMode) {
+                ForEach(ExternalDisplayMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text(settings.externalDisplayMode.description)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            if settings.externalDisplayMode == .mirror {
+                Divider()
+
+                Text("Mirror Axis")
+                    .font(.system(size: 13, weight: .medium))
+
+                Picker("", selection: $settings.mirrorAxis) {
+                    ForEach(MirrorAxis.allCases) { axis in
+                        Text(axis.label).tag(axis)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                Text(settings.mirrorAxis.description)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            if settings.externalDisplayMode != .off {
+                Divider()
+
+                Text("Target Display")
+                    .font(.system(size: 13, weight: .medium))
+
+                displayPicker(
+                    screens: availableScreens,
+                    selectedID: $settings.externalScreenID,
+                    onRefresh: { refreshScreens() },
+                    emptyMessage: "No external displays detected. Connect a display or enable Sidecar."
+                )
+            }
+            Spacer(minLength: 0)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear { refreshScreens() }
+    }
+
+    // MARK: - Remote Tab
+
+    @State private var localIP: String = BrowserServer.localIPAddress() ?? "localhost"
+    @State private var showAdvanced: Bool = false
+
+    private var browserTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Scan the QR code or open the URL with your iPhone, Android or TV browser on the same Wi-Fi network.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            Toggle(isOn: $settings.browserServerEnabled) {
+                Text("Enable Remote Connection")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
+
+            if settings.browserServerEnabled {
+                Divider()
+
+                let url = "http://\(localIP):\(settings.browserServerPort)"
+
+                if let qrImage = generateQRCode(from: url) {
+                    HStack {
+                        Spacer()
+                        Image(nsImage: qrImage)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        Spacer()
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Text(url)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Color.accentColor)
+                        .textSelection(.enabled)
+
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(url, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.accentColor.opacity(0.08))
+                )
+
+                DisclosureGroup("Advanced", isExpanded: $showAdvanced) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Port")
+                                .font(.system(size: 13, weight: .medium))
+                            HStack(spacing: 8) {
+                                TextField("Port", text: Binding(
+                                    get: { String(settings.browserServerPort) },
+                                    set: { str in
+                                        if let val = UInt16(str), val >= 1024, val < UInt16.max {
+                                            settings.browserServerPort = val
+                                        }
+                                    }
+                                ))
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+
+                                Text("Restart required after change")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.tertiary)
+
+                                Spacer()
+
+                                Button("Restart") {
+                                    DynoPromptService.shared.browserServer.stop()
+                                    DynoPromptService.shared.browserServer.start()
+                                    localIP = BrowserServer.localIPAddress() ?? "localhost"
+                                }
+                                .controlSize(.small)
+                                .buttonStyle(.bordered)
+                            }
+                        }
+
+                        HStack(spacing: 6) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                            Text("Uses ports \(String(settings.browserServerPort)) (HTTP) and \(String(settings.browserServerPort + 1)) (WebSocket).")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            }
+
+        }
+        .padding(16)
+        }
+        .onAppear { localIP = BrowserServer.localIPAddress() ?? "localhost" }
+    }
+
+    // MARK: - Director Tab
+
+    @State private var directorLocalIP: String = BrowserServer.localIPAddress() ?? "localhost"
+    @State private var showDirectorAdvanced: Bool = false
+
+    private var directorTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Director Mode lets a remote person control your teleprompter script in real-time via a web browser. The editor will be disabled while active.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            Toggle(isOn: $settings.directorModeEnabled) {
+                Text("Enable Director Mode")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
+
+            if settings.directorModeEnabled {
+                Divider()
+
+                let url = "http://\(directorLocalIP):\(settings.directorServerPort)"
+
+                if let qrImage = generateQRCode(from: url) {
+                    HStack {
+                        Spacer()
+                        Image(nsImage: qrImage)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        Spacer()
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Text(url)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Color.accentColor)
+                        .textSelection(.enabled)
+
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(url, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.accentColor.opacity(0.08))
+                )
+
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Text("Word tracking is forced when the director starts reading.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                DisclosureGroup("Advanced", isExpanded: $showDirectorAdvanced) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Port")
+                                .font(.system(size: 13, weight: .medium))
+                            HStack(spacing: 8) {
+                                TextField("Port", text: Binding(
+                                    get: { String(settings.directorServerPort) },
+                                    set: { str in
+                                        if let val = UInt16(str), val >= 1024, val < UInt16.max {
+                                            settings.directorServerPort = val
+                                        }
+                                    }
+                                ))
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+
+                                Text("Restart required after change")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.tertiary)
+
+                                Spacer()
+
+                                Button("Restart") {
+                                    DynoPromptService.shared.directorServer.stop()
+                                    DynoPromptService.shared.directorServer.start()
+                                    directorLocalIP = BrowserServer.localIPAddress() ?? "localhost"
+                                }
+                                .controlSize(.small)
+                                .buttonStyle(.bordered)
+                            }
+                        }
+
+                        HStack(spacing: 6) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                            Text("Uses ports \(String(settings.directorServerPort)) (HTTP) and \(String(settings.directorServerPort + 1)) (WebSocket).")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            }
+
+        }
+        .padding(16)
+        }
+        .onAppear { directorLocalIP = BrowserServer.localIPAddress() ?? "localhost" }
+    }
+
+    // MARK: - Shared Components
+
+    private func displayPicker(
+        screens: [NSScreen],
+        selectedID: Binding<UInt32>,
+        onRefresh: @escaping () -> Void,
+        emptyMessage: String? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if screens.isEmpty, let emptyMessage {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.orange)
+                    Text(emptyMessage)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.orange.opacity(0.08))
+                )
+            } else {
+                ForEach(screens, id: \.displayID) { screen in
+                    Button {
+                        selectedID.wrappedValue = screen.displayID
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "display")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(selectedID.wrappedValue == screen.displayID ? Color.accentColor : .secondary)
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(screen.displayName)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(selectedID.wrappedValue == screen.displayID ? Color.accentColor : .primary)
+                                Text("\(Int(screen.frame.width))×\(Int(screen.frame.height))")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if selectedID.wrappedValue == screen.displayID {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.accentColor)
+                            }
+                        }
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(selectedID.wrappedValue == screen.displayID ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.04))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Button(action: onRefresh) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text("Refresh")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - QR Code
+
+    private func generateQRCode(from string: String) -> NSImage? {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        guard let ciImage = filter.outputImage else { return nil }
+        let scale = 10.0
+        let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return NSImage(cgImage: cgImage, size: NSSize(width: scaled.extent.width, height: scaled.extent.height))
+    }
+
+    // MARK: - Helpers
+
+    private func resetAllSettings() {
+        settings.notchWidth = NotchSettings.defaultWidth
+        settings.textAreaHeight = NotchSettings.defaultHeight
+        settings.speechLocale = NotchSettings.defaultLocale
+        settings.fontSizePreset = .lg
+        settings.fontFamilyPreset = .sans
+        settings.fontColorPreset = .white
+        settings.cueColorPreset = .white
+        settings.cueBrightness = .dim
+        settings.overlayMode = .pinned
+        settings.notchDisplayMode = .followMouse
+        settings.pinnedScreenID = 0
+        settings.floatingGlassEffect = false
+        settings.glassOpacity = 0.15
+        settings.overlayTransparency = false
+        settings.overlayTransparencyOpacity = 0.85
+        settings.followCursorWhenUndocked = false
+        settings.fullscreenScreenID = 0
+        settings.externalDisplayMode = .off
+        settings.externalScreenID = 0
+        settings.mirrorAxis = .horizontal
+        settings.listeningMode = .wordTracking
+        settings.scrollSpeed = 3
+        settings.showElapsedTime = true
+        settings.hideFromScreenShare = true
+        settings.keepScreenAwake = false
+        settings.readingPosition = .centered
+        settings.showParagraphDividers = false
+        settings.showLastSpokenWords = true
+        settings.selectedMicUID = ""
+        settings.autoNextPage = false
+        settings.autoNextPageDelay = 3
+        settings.browserServerEnabled = false
+        settings.browserServerPort = 7373
+        settings.directorModeEnabled = false
+        settings.directorServerPort = 7575
+    }
+
+    private func refreshScreens() {
+        availableScreens = NSScreen.screens.filter { $0 != NSScreen.main }
+        if settings.externalScreenID == 0, let first = availableScreens.first {
+            settings.externalScreenID = first.displayID
+        }
+    }
+
+    private func refreshOverlayScreens() {
+        overlayScreens = NSScreen.screens
+        if settings.pinnedScreenID == 0, let main = NSScreen.main {
+            settings.pinnedScreenID = main.displayID
+        }
+        if settings.fullscreenScreenID == 0, let main = NSScreen.main {
+            settings.fullscreenScreenID = main.displayID
+        }
+    }
+}
+
+
+// MARK: - Speech Engine & Privacy
+
+extension SettingsView {
+
+    /// Engine choice plus an explicit statement of where audio is processed.
+    ///
+    /// This is deliberately prominent: a teleprompter holds the microphone
+    /// open for a whole session, so "where does my voice go" is the single
+    /// most important thing for the user to be able to answer at a glance.
+    @ViewBuilder
+    var speechEngineSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Speech Engine")
+                .font(.system(size: 13, weight: .medium))
+
+            Picker("", selection: $settings.speechEngine) {
+                ForEach(SpeechEngine.allCases) { engine in
+                    Text(engine.label).tag(engine)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text(settings.speechEngine.detail)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            switch settings.speechEngine {
+            case .appleOnDevice: appleEngineControls
+            case .whisperLocal:  whisperEngineControls
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var appleEngineControls: some View {
+        let supportsOnDevice = SpeechRecognizer.supportsOnDeviceRecognition(
+            locale: settings.speechLocale
+        )
+
+        Toggle(isOn: $settings.requireOnDeviceSpeech) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Keep audio on this Mac")
+                    .font(.system(size: 13, weight: .medium))
+                Text("Required by default. Turning this off lets macOS send microphone audio to Apple for transcription.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .toggleStyle(.switch)
+
+        if settings.requireOnDeviceSpeech && !supportsOnDevice {
+            settingsWarning(
+                "This language has no on-device model installed, so Word Tracking won't start. "
+                + "Install it in System Settings → General → Language & Region, pick another language, "
+                + "or switch to the Whisper engine."
+            )
+        } else if !settings.requireOnDeviceSpeech {
+            settingsWarning("Microphone audio may leave this Mac while Word Tracking is active.")
+        }
+    }
+
+    @ViewBuilder
+    private var whisperEngineControls: some View {
+        let manager = SpeechModelManager.shared
+        let usesEmbedded = WhisperLocalProvider.usesEmbeddedService
+        let installed = manager.installed
+
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Model")
+                    .font(.system(size: 12, weight: .medium))
+                Spacer()
+                Button("Manage Models…") { showModelManager = true }
+                    .controlSize(.small)
+                    .font(.system(size: 11))
+            }
+
+            if installed.isEmpty {
+                settingsWarning(
+                    "No speech model installed. Open Manage Models to download one."
+                )
+            } else {
+                // Bound to the setting itself, not to the manager's computed
+                // mirror of it — SwiftUI only observes the real stored value,
+                // and a Picker bound to the mirror redraws stale.
+                Picker("", selection: $settings.activeSpeechModelID) {
+                    ForEach(installed) { model in
+                        Text(installedModelLabel(model)).tag(model.id)
+                    }
+                }
+                .labelsHidden()
+
+                if let active = manager.installedModel(withID: settings.activeSpeechModelID) {
+                    Text("Stored at \(active.url.deletingLastPathComponent().path)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+
+            if usesEmbedded {
+                Label(
+                    "Built-in whisper.cpp, in a sandboxed helper with no network access.",
+                    systemImage: "checkmark.seal"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            } else if let runtime = WhisperLocalProvider.resolvedRuntime() {
+                Label(runtimeLabel(runtime), systemImage: "checkmark.seal")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            } else {
+                settingsWarning(
+                    "No speech helper found. Rebuild with Scripts/vendor-whisper.sh, or install "
+                    + "whisper.cpp with `brew install whisper-cpp`."
+                )
+            }
+        }
+    }
+
+    /// Label for a model that is present on disk.
+    private func installedModelLabel(_ model: InstalledSpeechModel) -> String {
+        let name = SpeechModelCatalog.model(withID: model.id)?.displayName ?? model.id
+        let origin = model.isBundled ? " · built-in" : ""
+        return model.sizeBytes > 0
+            ? "\(name) · \(ByteFormat.short(model.sizeBytes))\(origin)"
+            : "\(name)\(origin)"
+    }
+
+    private func modelLabel(_ model: WhisperModel) -> String {
+        let megabytes = model.sizeBytes > 0
+            ? " · \(model.sizeBytes / 1_048_576) MB"
+            : ""
+        let origin = model.source == .openWhispr ? " (OpenWhispr)" : ""
+        return model.displayName + megabytes + origin
+    }
+
+    private func runtimeLabel(_ runtime: WhisperRuntimeLocation) -> String {
+        switch runtime.source {
+        case .openWhispr:
+            return "Using whisper.cpp from OpenWhispr · runs on 127.0.0.1"
+        case .bundled:
+            return "Using the bundled whisper.cpp · runs on 127.0.0.1"
+        case .systemPath:
+            return "Using whisper.cpp at \(runtime.executableURL.path) · runs on 127.0.0.1"
+        case .userSelected:
+            return "Using your chosen whisper.cpp binary · runs on 127.0.0.1"
+        }
+    }
+
+    @ViewBuilder
+    func settingsWarning(_ message: String) -> some View {
+        Label(message, systemImage: "exclamationmark.triangle.fill")
+            .font(.system(size: 11))
+            .foregroundStyle(.orange)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+
+// MARK: - Numeric entry
+
+extension SettingsView {
+
+    /// A small editable number beside a slider.
+    ///
+    /// Sliders are good for finding a value and bad for reproducing one. A
+    /// presenter who has found that 34 pt reads correctly from their chair
+    /// should be able to type 34 rather than hunt for it again on every
+    /// machine.
+    @ViewBuilder
+    func measurementField(
+        value: Binding<CGFloat>,
+        range: ClosedRange<CGFloat>,
+        unit: String
+    ) -> some View {
+        HStack(spacing: 2) {
+            TextField(
+                "",
+                value: Binding(
+                    get: { Double(value.wrappedValue) },
+                    // Clamped on commit, so a typo cannot push the overlay to
+                    // an unusable size.
+                    set: { value.wrappedValue = min(max(CGFloat($0), range.lowerBound), range.upperBound) }
+                ),
+                format: .number.precision(.fractionLength(0))
+            )
+            .textFieldStyle(.plain)
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 11, weight: .regular, design: .monospaced))
+            .frame(width: 38)
+
+            Text(unit)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.tertiary)
+
+            Stepper("") {
+                value.wrappedValue = min(value.wrappedValue + 1, range.upperBound)
+            } onDecrement: {
+                value.wrappedValue = max(value.wrappedValue - 1, range.lowerBound)
+            }
+            .labelsHidden()
+            .controlSize(.mini)
+        }
+    }
+}

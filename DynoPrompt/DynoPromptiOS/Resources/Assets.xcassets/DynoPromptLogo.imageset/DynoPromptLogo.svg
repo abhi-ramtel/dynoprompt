@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>DynoPrompt</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#292b33"/>
+      <stop offset="1" stop-color="#121217"/>
+    </linearGradient>
+    <linearGradient id="active" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffde6b"/>
+      <stop offset="1" stop-color="#fcb529"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-120%" width="160%" height="340%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="512" height="512" rx="114.5" ry="114.5"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <rect x="0" y="0" width="512" height="512" fill="url(#bg)"/>
+
+    <!-- Script lines: read above, unread below, active in the middle. -->
+    <g fill="#ffffff">
+      <rect x="139" y="128" width="235" height="32" rx="16" opacity="0.16"/>
+      <rect x="108" y="188" width="297" height="32" rx="16" opacity="0.28"/>
+      <rect x="098" y="308" width="317" height="32" rx="16" opacity="0.46"/>
+      <rect x="148" y="368" width="215" height="32" rx="16" opacity="0.30"/>
+    </g>
+
+    <!-- The line being spoken right now. -->
+    <rect x="77" y="240" width="358" height="46" rx="23"
+          fill="url(#active)" filter="url(#glow)"/>
+
+    <!-- The notch the prompter docks under, with the camera the reader
+         should be looking at. -->
+    <rect x="171" y="-45" width="171" height="90" rx="45" fill="#050508"/>
+    <circle cx="256" cy="22" r="10" fill="#385166"/>
+  </g>
+</svg>

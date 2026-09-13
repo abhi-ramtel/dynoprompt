@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The helper is sandboxed in its own right, and deliberately has no
+	     network entitlement of any kind: even a compromised whisper.cpp
+	     could not send audio anywhere. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Reads the model the host hands it, when that model lives outside the
+	     bundle (a user-selected or OpenWhispr-supplied file). -->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+</dict>
+</plist>

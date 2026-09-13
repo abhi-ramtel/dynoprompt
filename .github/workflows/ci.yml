@@ -1,0 +1,261 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: Build & test (macOS)
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Deliberately not pinning an Xcode version. Runner images install
+      # simulator runtimes paired with their default Xcode, and selecting an
+      # older one leaves an SDK with no matching runtime — which makes actool
+      # refuse to compile asset catalogs.
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install cmake
+        run: brew list cmake >/dev/null 2>&1 || brew install cmake
+
+      # whisper.cpp takes several minutes to build and the model is ~141 MB;
+      # both are pinned, so caching them makes CI minutes rather than tens of
+      # minutes.
+      - name: Cache vendored whisper.cpp and model
+        uses: actions/cache@v4
+        with:
+          path: |
+            DynoPrompt/ThirdParty/whisper
+            DynoPrompt/ThirdParty/models
+          key: whisper-${{ runner.os }}-${{ hashFiles('DynoPrompt/Scripts/vendor-whisper.sh', 'DynoPrompt/Scripts/fetch-model.sh') }}
+
+      - name: Build macOS app
+        run: |
+          xcodebuild build \
+            -project DynoPrompt/DynoPrompt.xcodeproj \
+            -scheme DynoPrompt \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project DynoPrompt/DynoPrompt.xcodeproj \
+            -scheme DynoPrompt \
+            -destination 'platform=macOS' \
+            -only-testing:DynoPromptTests \
+            CODE_SIGNING_ALLOWED=NO
+
+      # Exercises the real bundled path: app → embedded XPC service →
+      # whisper.cpp → synchroniser. The service can only be launched by its
+      # containing app, so this runs from inside the built app.
+      - name: Verify bundled speech stack
+        run: |
+          cd DynoPrompt
+          ./Scripts/verify-whisper.sh Debug
+
+  ios:
+    name: Build & test (iOS)
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Deliberately not pinning an Xcode version. Runner images install
+      # simulator runtimes paired with their default Xcode, and selecting an
+      # older one leaves an SDK with no matching runtime — which makes actool
+      # refuse to compile asset catalogs.
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      # Build the app target directly, against the device SDK.
+      #
+      # Building the *scheme* pulls in DynoPromptiOSTests, which forces the
+      # simulator SDK — and actool will not compile an asset catalog for that
+      # SDK without a matching simulator runtime installed, which runner images
+      # do not reliably have. Targeting the app alone against iphoneos has no
+      # such dependency and still catches every compile and link error.
+      - name: Build iOS app
+        run: |
+          xcodebuild build \
+            -project DynoPrompt/DynoPrompt.xcodeproj \
+            -target DynoPromptiOS \
+            -sdk iphoneos \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      # Runner images do not always ship an iOS simulator runtime, and
+      # downloading one costs several GB. Resolve whatever is installed and run
+      # the tests against it; skip with a notice when there is none, rather
+      # than failing a build for a missing runner feature.
+      - name: Resolve a simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          DEVICE_ID="$(xcodebuild -showdestinations \
+            -project DynoPrompt/DynoPrompt.xcodeproj \
+            -scheme DynoPromptiOS 2>/dev/null \
+            | grep 'platform:iOS Simulator' \
+            | grep -o 'id:[0-9A-F-]\{36\}' \
+            | head -1 | cut -d: -f2 || true)"
+          if [ -z "$DEVICE_ID" ]; then
+            echo "::notice::No iOS simulator runtime on this runner; skipping the iOS test run. The app was still compiled."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run iOS tests
+        if: steps.sim.outputs.found == 'true'
+        env:
+          DEVICE_ID: ${{ steps.sim.outputs.device_id }}
+        run: |
+          xcodebuild test \
+            -project DynoPrompt/DynoPrompt.xcodeproj \
+            -scheme DynoPromptiOS \
+            -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            CODE_SIGNING_ALLOWED=NO
+
+  privacy-guardrails:
+    name: Privacy guardrails
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Cheap tripwires for the properties that define the product. Not a
+      # substitute for review, but they fail loudly if someone reintroduces a
+      # cloud dependency or drops the on-device pin.
+      - name: No cloud speech or analytics SDKs
+        run: |
+          set -euo pipefail
+          if grep -rniE \
+            -e 'api\.openai\.com' \
+            -e 'speech\.googleapis\.com' \
+            -e 'cognitiveservices\.azure\.com' \
+            -e 'transcribe\.[a-z0-9-]*\.amazonaws\.com' \
+            -e 'deepgram\.com' \
+            -e 'assemblyai\.com' \
+            --include='*.swift' DynoPrompt/; then
+            echo "::error::A cloud transcription endpoint was referenced in Swift sources."
+            exit 1
+          fi
+          echo "No cloud transcription endpoints found."
+
+      - name: On-device recognition pin is still present
+        run: |
+          set -euo pipefail
+          if ! grep -q 'requiresOnDeviceRecognition = true' DynoPrompt/DynoPrompt/SpeechRecognizer.swift; then
+            echo "::error::SpeechRecognizer no longer pins recognition to on-device."
+            exit 1
+          fi
+          echo "On-device recognition pin present."
+
+      - name: Whisper server stays bound to loopback
+        run: |
+          set -euo pipefail
+          if ! grep -q '"--host", "127.0.0.1"' DynoPrompt/DynoPrompt/WhisperLocalProvider.swift; then
+            echo "::error::The whisper.cpp helper is no longer pinned to 127.0.0.1."
+            exit 1
+          fi
+          echo "Whisper helper pinned to loopback."
+
+      - name: Speech helper has no network entitlement
+        run: |
+          set -euo pipefail
+          if grep -qE 'com\.apple\.security\.network' DynoPrompt/WhisperService/WhisperService.entitlements; then
+            echo "::error::The whisper helper gained a network entitlement. It must never reach the network."
+            exit 1
+          fi
+          if ! grep -q 'com\.apple\.security\.app-sandbox' DynoPrompt/WhisperService/WhisperService.entitlements; then
+            echo "::error::The whisper helper is no longer sandboxed."
+            exit 1
+          fi
+          echo "Whisper helper is sandboxed with no network access."
+
+      # A model download is the one place the app fetches an external file.
+      # These pin the properties that make that safe.
+      - name: Model downloads stay pinned and verified
+        run: |
+          set -euo pipefail
+          CATALOG=DynoPrompt/DynoPromptCore/SpeechModelCatalog.swift
+          if grep -qE 'downloadURL: URL\(string: "http://' "$CATALOG"; then
+            echo "::error::A model source uses plaintext HTTP."
+            exit 1
+          fi
+          # Every catalog entry must carry a 64-char digest. The unit tests
+          # assert this too; this catches it without a full build.
+          ENTRIES=$(grep -c 'sha256: "' "$CATALOG")
+          DIGESTS=$(grep -cE 'sha256: "[0-9a-f]{64}"' "$CATALOG")
+          if [ "$ENTRIES" != "$DIGESTS" ]; then
+            echo "::error::$ENTRIES model entries but only $DIGESTS valid SHA-256 digests."
+            exit 1
+          fi
+          echo "$DIGESTS model entries, all pinned to a SHA-256 over HTTPS."
+
+      - name: Downloaded models are never executed
+        run: |
+          set -euo pipefail
+          # A model is data parsed by whisper.cpp, never run. Nothing should
+          # hand a model path to a process launcher or mark one executable.
+          if grep -rnE 'executableURL.*model|setAttributes.*0o7[0-9][0-9].*[Mm]odel' \
+              DynoPrompt/DynoPromptCore DynoPrompt/DynoPrompt 2>/dev/null; then
+            echo "::error::A model file path appears to reach an execution path."
+            exit 1
+          fi
+          echo "No execution path for model files."
+
+      - name: Vendored model and libraries stay out of git
+        run: |
+          set -euo pipefail
+          if git ls-files --error-unmatch DynoPrompt/ThirdParty >/dev/null 2>&1; then
+            echo "::error::ThirdParty artefacts were committed. They are build outputs (~141 MB)."
+            exit 1
+          fi
+          echo "ThirdParty is not tracked."
+
+      # Caught a real crash: clamping inside `didSet` recursed under
+      # @Observable and blew the stack when Settings opened.
+      # A Release build must never ship the placeholder whisper.cpp that keeps
+      # developer builds working without cmake.
+      - name: Release builds refuse the whisper placeholder
+        run: |
+          set -euo pipefail
+          if ! grep -q 'Release|AppStore) REQUIRE_WHISPER=1' DynoPrompt/Scripts/vendor-whisper.sh; then
+            echo "::error::vendor-whisper.sh no longer hard-fails for shipping builds."
+            exit 1
+          fi
+          if ! grep -q 'DYNOPROMPT_SKIP_WHISPER is ignored' DynoPrompt/Scripts/vendor-whisper.sh; then
+            echo "::error::The skip switch is no longer ignored for shipping builds."
+            exit 1
+          fi
+          echo "Shipping builds require a real whisper.cpp."
+
+      - name: No recursive didSet in @Observable types
+        run: python3 DynoPrompt/Scripts/check-observable-didset.py
+
+      - name: No third-party package dependencies
+        run: |
+          set -euo pipefail
+          if grep -q 'XCRemoteSwiftPackageReference' DynoPrompt/DynoPrompt.xcodeproj/project.pbxproj; then
+            echo "::error::A remote Swift package was added. DynoPrompt ships with no third-party dependencies."
+            exit 1
+          fi
+          echo "No remote package references."

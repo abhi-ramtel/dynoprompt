@@ -1,0 +1,10 @@
+// Exposes whisper.cpp's C API to Swift.
+//
+// The headers and static libraries are produced by Scripts/vendor-whisper.sh
+// into ThirdParty/whisper; the header search path is set on the target rather
+// than hard-coded here so the module stays relocatable.
+module CWhisper {
+    header "shim.h"
+    link "c++"
+    export *
+}

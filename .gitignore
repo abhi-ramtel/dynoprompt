@@ -1,0 +1,42 @@
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+Textream/Textream.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Archives & build artifacts
+*.xcarchive
+*.app
+*.dmg
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Local App Store metadata and assets
+/app-store/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# SwiftPM
+.build/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Misc
+*.swp
+*~
+*.orig
+*.log
+
+# Vendored whisper.cpp build products and the downloaded speech model.
+# Both are produced by DynoPrompt/Scripts/* at build time; neither belongs in
+# git history (the model alone is ~141 MB).
+DynoPrompt/ThirdParty/

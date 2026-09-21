@@ -297,8 +297,19 @@ final class ScriptSyncEngineTests: XCTestCase {
     /// work bounded — so if someone makes it scan the whole script, this
     /// blows up on any hardware.
     func testUpdateCostDoesNotGrowWithScriptLength() {
+        // Loading is deliberately outside the timed region. Tokenising the
+        // script is O(script length) and happens once per session; the
+        // property under test is that each *update* stays bounded no matter
+        // how long the script is. Timing the load with the updates conflates
+        // the two and makes the ratio grow with script length even when every
+        // update is constant-time.
         func timeUpdates(scriptWords: Int) -> TimeInterval {
             let engine = engine((1...scriptWords).map { "word\($0)" }.joined(separator: " "))
+
+            // Warm the first alignment so neither measurement pays a one-off
+            // cost the other does not.
+            engine.consume(transcript: "word1 word2 word3")
+
             let start = Date()
             for i in 0..<200 {
                 engine.consume(transcript: "word\(i * 3) word\(i * 3 + 1) word\(i * 3 + 2)")
@@ -306,19 +317,26 @@ final class ScriptSyncEngineTests: XCTestCase {
             return Date().timeIntervalSince(start)
         }
 
-        let short = timeUpdates(scriptWords: 200)
-        let long = timeUpdates(scriptWords: 8_000)
+        // Both scripts must outlast the run. The transcripts advance three
+        // words per update, so 200 updates walk ~600 words: a shorter script
+        // would finish partway through and spend the rest of the run returning
+        // immediately, making the comparison one of "how many updates did real
+        // work" rather than "what does an update cost".
+        let shorter = timeUpdates(scriptWords: 2_000)
+        let longer = timeUpdates(scriptWords: 16_000)
 
-        // 40× the script for well under 4× the time. A linear scan would be
-        // ~40× slower and fail decisively.
-        let ratio = long / max(short, 0.0001)
+        // 8× the script for well under 2× the per-update time. A linear scan
+        // would be roughly 8× slower and fail decisively; the remaining
+        // headroom absorbs scheduling noise on shared CI hardware.
+        let ratio = longer / max(shorter, 0.0001)
         XCTAssertLessThan(
-            ratio, 4.0,
-            "cost scaled with script length: \(short)s for 200 words, \(long)s for 8,000"
+            ratio, 2.0,
+            "per-update cost scaled with script length: "
+            + "\(shorter)s for 2,000 words, \(longer)s for 16,000"
         )
 
         // Loose absolute ceiling, purely to catch a catastrophic regression on
         // any machine. Real updates arrive about every 100 ms.
-        XCTAssertLessThan(long, 10.0, "200 updates on an 8,000-word script took \(long)s")
+        XCTAssertLessThan(longer, 10.0, "200 updates on a 16,000-word script took \(longer)s")
     }
 }

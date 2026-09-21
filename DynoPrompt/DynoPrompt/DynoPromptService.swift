@@ -7,12 +7,19 @@
 
 import AppKit
 import Combine
+import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
 class DynoPromptService: NSObject, ObservableObject {
     static let shared = DynoPromptService()
     private static let lastDocumentURLDefaultsKey = "lastDocumentURL"
+    private static let persistenceLogger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "dev.fka.dynoprompt",
+        category: "EditorPersistence"
+    )
+
+    private let savedEditorStateStore: SavedEditorStateStore?
     let overlayController = NotchOverlayController()
     let externalDisplayController = ExternalDisplayController()
     let browserServer = BrowserServer()
@@ -184,7 +191,88 @@ class DynoPromptService: NSObject, ObservableObject {
     @Published var currentFileURL: URL?
     @Published var savedPages: [String] = [""]
 
+    /// Library entry the editor is currently working on, when the content came
+    /// from the script library.
+    ///
+    /// The quit flow lives here, so the decision "where does Save go?" has to
+    /// be answerable here too. Without this the service only knew about
+    /// `.dynoprompt` documents, and quitting while editing a library script
+    /// pushed the user into a file save panel for content that already had a
+    /// home.
+    @Published var activeLibraryScriptID: UUID?
+
+    /// Writes the current pages back to the library entry, returning true on
+    /// success. Installed at launch; a closure rather than a direct reference
+    /// so the service does not depend on the library UI layer.
+    var saveToLibraryHandler: (([String], UUID?) -> UUID?)?
+
+    override init() {
+        if let fileURL = try? SavedEditorStateStore.defaultFileURL() {
+            savedEditorStateStore = SavedEditorStateStore(fileURL: fileURL)
+        } else {
+            savedEditorStateStore = nil
+        }
+
+        super.init()
+
+        restoreSavedEditorState()
+    }
+
     // MARK: - File Operations
+
+    /// Brings back the last durably saved content *and* where it came from.
+    ///
+    /// Restoring the pages alone leaves an orphan: the next Save cannot tell
+    /// whether it should update a library entry, rewrite a document, or ask
+    /// for a new location, so it falls back to asking every time.
+    private func restoreSavedEditorState() {
+        guard let restored = savedEditorStateStore?.load() else { return }
+
+        pages = restored.pages
+        savedPages = restored.pages
+        currentPageIndex = min(max(0, restored.currentPageIndex), restored.pages.count - 1)
+        activeLibraryScriptID = restored.libraryScriptID
+
+        // A document is only usable again if its bookmark still resolves. The
+        // sandbox revoked the original grant when the last launch ended, so a
+        // path on its own would produce a URL that cannot be written to.
+        if let bookmark = restored.documentBookmark,
+           let resolved = SavedDocumentReference.resolve(bookmark),
+           FileManager.default.fileExists(atPath: resolved.url.path) {
+            currentFileURL = resolved.url
+            if resolved.isStale {
+                // The file moved; record a fresh bookmark so the next launch
+                // does not have to chase it again.
+                rememberSavedEditorState()
+            }
+        } else if restored.documentBookmark != nil {
+            Self.persistenceLogger.info(
+                "The previously open document could not be reopened; keeping its content unlinked."
+            )
+        }
+    }
+
+    /// Records only content that is already durable (a saved document or
+    /// library entry). Unsaved edits deliberately remain outside this file so
+    /// choosing Discard on quit cannot resurrect them on the next launch.
+    func rememberSavedEditorState() {
+        guard let store = savedEditorStateStore else { return }
+        do {
+            try store.save(
+                SavedEditorState(
+                    pages: pages,
+                    currentPageIndex: currentPageIndex,
+                    libraryScriptID: activeLibraryScriptID,
+                    documentBookmark: currentFileURL.flatMap { SavedDocumentReference.bookmark(for: $0) },
+                    documentPath: currentFileURL?.path
+                )
+            )
+        } catch {
+            Self.persistenceLogger.error(
+                "Couldn't record the last saved editor state: \(error.localizedDescription, privacy: .public)"
+            )
+        }
+    }
 
     private var lastDocumentDirectoryURL: URL? {
         guard let path = UserDefaults.standard.string(forKey: Self.lastDocumentURLDefaultsKey),
@@ -207,15 +295,78 @@ class DynoPromptService: NSObject, ObservableObject {
         )
     }
 
-    func saveFile() {
-        if let url = currentFileURL {
-            saveToURL(url)
-        } else {
-            saveFileAs()
+    /// Where a Save would go, given what the editor is currently holding.
+    enum SaveDestination: Equatable {
+        /// A `.dynoprompt` document the user already chose.
+        case document(URL)
+        /// An entry in the script library.
+        case library(UUID?)
+        /// Nowhere yet — Save has to ask.
+        case prompt
+
+        var description: String {
+            switch self {
+            case .document(let url):  return "document \(url.lastPathComponent)"
+            case .library(let id):
+                return "library \(id.map { String($0.uuidString.prefix(8)) } ?? "new entry")"
+            case .prompt:             return "ask for a location"
+            }
         }
     }
 
-    func saveFileAs() {
+    /// Resolved in one place so the menu item, the quit prompt and the
+    /// diagnostics cannot disagree about where content belongs.
+    ///
+    /// Order matters. A document URL wins because the user explicitly chose
+    /// that file; otherwise a library entry is used; only content with no home
+    /// at all prompts. Before this, everything without a document URL fell
+    /// through to a save panel — including library scripts, which already had
+    /// somewhere to go.
+    var saveDestination: SaveDestination {
+        if let url = currentFileURL { return .document(url) }
+        // Only content that already belongs to a library entry goes back to
+        // the library. Brand-new content still prompts, because Save and
+        // Save to Library are separate commands and Save should not quietly
+        // invent a library entry the user never asked for.
+        if let scriptID = activeLibraryScriptID, saveToLibraryHandler != nil {
+            return .library(scriptID)
+        }
+        return .prompt
+    }
+
+    @discardableResult
+    func saveFile() -> Bool {
+        switch saveDestination {
+        case .document(let url):
+            return saveToURL(url)
+        case .library:
+            // Falls through to a panel if the library write fails, so a
+            // failure cannot silently look like a successful save.
+            return saveToLibrary() || saveFileAs()
+        case .prompt:
+            return saveFileAs()
+        }
+    }
+
+    /// Writes the current pages to the script library.
+    ///
+    /// Returns false when there is no library available, which lets `saveFile`
+    /// fall through to a save panel rather than silently doing nothing.
+    @discardableResult
+    func saveToLibrary() -> Bool {
+        guard let handler = saveToLibraryHandler else { return false }
+        guard let savedID = handler(pages, activeLibraryScriptID) else {
+            Self.persistenceLogger.error("Couldn't write the script to the library.")
+            return false
+        }
+        activeLibraryScriptID = savedID
+        savedPages = pages
+        rememberSavedEditorState()
+        return true
+    }
+
+    @discardableResult
+    func saveFileAs() -> Bool {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.init(filenameExtension: "dynoprompt")!]
         panel.nameFieldStringValue = "Untitled.dynoprompt"
@@ -223,25 +374,33 @@ class DynoPromptService: NSObject, ObservableObject {
         panel.directoryURL = currentFileURL?.deletingLastPathComponent()
             ?? lastDocumentDirectoryURL
 
-        panel.begin { [weak self] response in
-            guard response == .OK, let url = panel.url else { return }
-            self?.saveToURL(url)
-        }
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        return saveToURL(url)
     }
 
-    private func saveToURL(_ url: URL) {
+    @discardableResult
+    private func saveToURL(_ url: URL) -> Bool {
         do {
             let data = try JSONEncoder().encode(pages)
-            try data.write(to: url, options: .atomic)
+            // The scope has to be held for the write itself. A URL restored
+            // from a bookmark carries permission that is only active between
+            // start and stop; writing outside that window fails in the
+            // sandboxed build even though the path is correct.
+            try SavedDocumentReference.withAccess(to: url) {
+                try data.write(to: url, options: .atomic)
+            }
             currentFileURL = url
             savedPages = pages
             rememberDocumentURL(url)
+            rememberSavedEditorState()
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
+            return true
         } catch {
             let alert = NSAlert()
             alert.messageText = "Failed to save file"
             alert.informativeText = error.localizedDescription
             alert.runModal()
+            return false
         }
     }
 
@@ -295,10 +454,13 @@ class DynoPromptService: NSObject, ObservableObject {
                 let notes = try PresentationNotesExtractor.extractNotes(from: url)
                 DispatchQueue.main.async {
                     self?.pages = notes
-                    self?.savedPages = notes
+                    // Imported notes have not been saved as a DynoPrompt
+                    // document or library entry yet.
+                    self?.savedPages = []
                     self?.currentPageIndex = 0
                     self?.readPages.removeAll()
                     self?.currentFileURL = nil
+                    self?.activeLibraryScriptID = nil
                     self?.rememberDocumentURL(url)
                 }
             } catch {
@@ -319,7 +481,7 @@ class DynoPromptService: NSObject, ObservableObject {
 
         let alert = NSAlert()
         alert.messageText = "You have unsaved changes"
-        alert.informativeText = "Do you want to save your changes before opening another file?"
+        alert.informativeText = "Do you want to save your changes before continuing?"
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Discard")
         alert.addButton(withTitle: "Cancel")
@@ -328,8 +490,7 @@ class DynoPromptService: NSObject, ObservableObject {
         let response = alert.runModal()
         switch response {
         case .alertFirstButtonReturn:
-            saveFile()
-            return true
+            return saveFile()
         case .alertSecondButtonReturn:
             return true
         default:
@@ -339,7 +500,9 @@ class DynoPromptService: NSObject, ObservableObject {
 
     func openFileAtURL(_ url: URL) {
         do {
-            let data = try Data(contentsOf: url)
+            let data = try SavedDocumentReference.withAccess(to: url) {
+                try Data(contentsOf: url)
+            }
             let loadedPages = try JSONDecoder().decode([String].self, from: data)
             guard !loadedPages.isEmpty else { return }
             pages = loadedPages
@@ -347,7 +510,11 @@ class DynoPromptService: NSObject, ObservableObject {
             currentPageIndex = 0
             readPages.removeAll()
             currentFileURL = url
+            // Opening a document replaces whatever the editor was showing, so
+            // it is no longer tied to a library entry.
+            activeLibraryScriptID = nil
             rememberDocumentURL(url)
+            rememberSavedEditorState()
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
         } catch {
             let alert = NSAlert()

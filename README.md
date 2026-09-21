@@ -1053,6 +1053,28 @@ picked up. Pick the right input in **Settings → Guidance → Microphone**. If 
 waveform moves but the text doesn't, your delivery may have drifted too far
 from the script; tap a word or press **→** to re-anchor.
 
+**My script came back but Save asks for a location again**
+The editor remembers which document a script came from using a bookmark, and
+macOS ties that bookmark to the app's code signature. An ad-hoc signature
+changes every time you rebuild, so reinstalling invalidates it. Your content is
+still restored — only the link to the file is lost, and the next Save
+re-establishes it. Signing with a Developer ID avoids this:
+
+```bash
+DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" ./Scripts/install.sh
+```
+
+**The app didn't reopen what I was working on**
+Only content that reached a durable save is restored — a `.dynoprompt`
+document, or a script in the library. Edits you chose to discard on quit are
+deliberately not resurrected. Check the restore with:
+
+```bash
+/Applications/DynoPrompt.app/Contents/MacOS/DynoPrompt --whisper-selftest
+```
+
+It reports how many pages came back and where they came from.
+
 **The text is too small or the overlay is the wrong size**
 Settings → Appearance. Width, height, font size and line spacing are all
 continuous — drag the slider or type an exact number. Mid-session, use **+/−**

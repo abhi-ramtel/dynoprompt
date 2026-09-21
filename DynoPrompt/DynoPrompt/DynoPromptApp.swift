@@ -23,6 +23,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     )
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // Wiring first, and before the diagnostic exit below.
+        //
+        // The quit prompt can run before the editor window has ever appeared —
+        // a launch followed straight by Command-Q still has to know where the
+        // restored script belongs. Assigning the closure constructs nothing;
+        // the library is only touched when a save actually happens.
+        DynoPromptService.shared.saveToLibraryHandler = { pages, scriptID in
+            let library = ScriptLibraryModel.shared
+            library.activeScriptID = scriptID
+            return library.save(pages: pages)?.id
+        }
+
         // Diagnostic mode: exercise the bundled speech stack and exit without
         // ever showing UI. The embedded XPC service can only be launched by
         // this bundle, so this is the only place the real path can be tested.
@@ -33,6 +45,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Runs before any settings are read, so a returning user sees their
         // existing preferences rather than defaults.
         LegacyMigration.runIfNeeded()
+
+        // The editor restored a library script, so the library UI should show
+        // it as the open one.
+        if let restoredScriptID = DynoPromptService.shared.activeLibraryScriptID {
+            ScriptLibraryModel.shared.activeScriptID = restoredScriptID
+        }
 
         NSWindow.allowsAutomaticWindowTabbing = false
         let launchedByURL: Bool
@@ -97,33 +115,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        if DynoPromptService.shared.hasUnsavedChanges {
-            guard DynoPromptService.shared.confirmDiscardIfNeeded() else { return false }
-        }
+        // Keep all termination decisions in applicationShouldTerminate so a
+        // window close and Command-Q cannot diverge.
         NSApp.terminate(nil)
         return false
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard
+        if
             DynoPromptService.shared.overlayController.isShowing,
             let event = NSAppleEventManager.shared().currentAppleEvent,
             event.eventClass == kCoreEventClass,
             event.eventID == kAEQuitApplication,
             event.paramDescriptor(forKeyword: kAEQuitReason) == nil
-        else {
-            return .terminateNow
+        {
+            let senderPID = event.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value ?? 0
+            let runningApplication = NSRunningApplication(processIdentifier: pid_t(senderPID))
+            let senderName = runningApplication?.localizedName ?? "unknown"
+            let senderBundleIdentifier = runningApplication?.bundleIdentifier ?? "unknown"
+
+            lifecycleLogger.warning(
+                "Blocked external quit while teleprompter is active; senderPID=\(senderPID, privacy: .public) sender=\(senderName, privacy: .public) bundleIdentifier=\(senderBundleIdentifier, privacy: .public)"
+            )
+            return .terminateCancel
         }
 
-        let senderPID = event.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value ?? 0
-        let runningApplication = NSRunningApplication(processIdentifier: pid_t(senderPID))
-        let senderName = runningApplication?.localizedName ?? "unknown"
-        let senderBundleIdentifier = runningApplication?.bundleIdentifier ?? "unknown"
-
-        lifecycleLogger.warning(
-            "Blocked external quit while teleprompter is active; senderPID=\(senderPID, privacy: .public) sender=\(senderName, privacy: .public) bundleIdentifier=\(senderBundleIdentifier, privacy: .public)"
-        )
-        return .terminateCancel
+        return DynoPromptService.shared.confirmDiscardIfNeeded()
+            ? .terminateNow
+            : .terminateCancel
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

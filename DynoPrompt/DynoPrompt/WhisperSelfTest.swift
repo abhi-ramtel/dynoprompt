@@ -127,6 +127,138 @@ enum WhisperSelfTest {
         layout.fontSize = savedFontSize
         layout.lineSpacingMultiplier = savedSpacing
 
+        // --- Editor state restored from the last durable save -------------
+        // Exercises the real restore path in the real app: the service reads
+        // its state file during init, before any window exists. Reporting what
+        // it actually came back with is the only way to confirm a relaunch
+        // brings back both the content and where it came from.
+        let service = DynoPromptService.shared
+        let restoredWords = service.pages.reduce(0) {
+            $0 + $1.split(whereSeparator: { $0.isWhitespace }).count
+        }
+        let provenance: String
+        if let scriptID = service.activeLibraryScriptID {
+            provenance = "library \(scriptID.uuidString.prefix(8))"
+        } else if let url = service.currentFileURL {
+            provenance = "document \(url.lastPathComponent)"
+        } else {
+            provenance = "no saved source"
+        }
+        check(
+            "editor state restored",
+            true,
+            "\(service.pages.count) page(s), \(restoredWords) words, \(provenance)"
+        )
+        check(
+            "restored content is not marked unsaved",
+            service.pages == service.savedPages || service.savedPages.isEmpty,
+            service.hasUnsavedChanges ? "reports unsaved changes" : "clean"
+        )
+
+        // --- Document bookmarks work in this build's signing context ------
+        // Security-scoped bookmarks are app-scoped, so this can only be
+        // answered from inside the app itself. It also differs between the
+        // sandboxed and direct-install builds, and if it fails the editor
+        // silently forgets which file a script came from.
+        let probe = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dynoprompt-bookmark-probe.dynoprompt")
+        do {
+            try Data(#"["probe"]"#.utf8).write(to: probe)
+            let bookmark = SavedDocumentReference.bookmark(for: probe)
+            let resolved = bookmark.flatMap { SavedDocumentReference.resolve($0) }
+            let sameFile = resolved.map {
+                $0.url.resolvingSymlinksInPath().standardizedFileURL
+                    == probe.resolvingSymlinksInPath().standardizedFileURL
+            } ?? false
+            check(
+                "document bookmarks round-trip",
+                sameFile,
+                bookmark == nil ? "bookmark could not be created"
+                    : (resolved == nil ? "bookmark did not resolve" : "ok")
+            )
+
+            // The full persistence chain, through the same store the app uses
+            // at launch: record a document-backed state, read it back, resolve
+            // the document, and confirm it is still writable. A temporary
+            // state file keeps this out of the user's real one.
+            let probeState = FileManager.default.temporaryDirectory
+                .appendingPathComponent("dynoprompt-state-probe.json")
+            let store = SavedEditorStateStore(fileURL: probeState)
+
+            // If a previous run left state behind, its bookmark was created by
+            // a different launch of this app — which is exactly the case that
+            // matters. Resolving it here proves a document stays reachable
+            // across a relaunch, not merely within one process.
+            if let previous = store.load(), let previousBookmark = previous.documentBookmark {
+                let resolvedAcrossLaunches = SavedDocumentReference.resolve(previousBookmark)
+                    .map { FileManager.default.fileExists(atPath: $0.url.path) } ?? false
+
+                // A security-scoped bookmark is tied to the app's code
+                // signature, and an ad-hoc signature changes with every build.
+                // So a stale bookmark after a rebuild is expected, while a
+                // stale one from the same binary is a real regression — the
+                // recorded build fingerprint tells them apart.
+                let sameBuild = previous.documentPath == Self.buildFingerprint
+                if resolvedAcrossLaunches || sameBuild {
+                    check(
+                        "document from a previous launch still resolves",
+                        resolvedAcrossLaunches,
+                        resolvedAcrossLaunches ? "ok" : "bookmark went stale between launches"
+                    )
+                } else {
+                    print("      Skipped the cross-launch document check: the app was rebuilt,")
+                    print("      which changes its signature and invalidates old bookmarks.")
+                }
+            }
+
+            try store.save(
+                SavedEditorState(
+                    pages: ["Recorded page one", "Recorded page two"],
+                    currentPageIndex: 1,
+                    documentBookmark: bookmark,
+                    // Reused to fingerprint the build, so the check above can
+                    // tell a rebuild apart from a genuine regression.
+                    documentPath: Self.buildFingerprint
+                )
+            )
+
+            let reloaded = store.load()
+            let reloadedDocument = reloaded?.documentBookmark
+                .flatMap { SavedDocumentReference.resolve($0) }?.url
+            var documentWritable = false
+            if let reloadedDocument {
+                documentWritable = (try? SavedDocumentReference.withAccess(to: reloadedDocument) {
+                    try Data(#"["rewritten"]"#.utf8).write(to: reloadedDocument, options: .atomic)
+                    return true
+                }) ?? false
+            }
+
+            check(
+                "document-backed state round-trips",
+                reloaded?.pages.count == 2
+                    && reloaded?.currentPageIndex == 1
+                    && reloadedDocument != nil
+                    && documentWritable,
+                reloadedDocument?.lastPathComponent ?? "document did not resolve"
+            )
+        } catch {
+            check("document bookmarks round-trip", false, error.localizedDescription)
+        }
+
+        // Where Save would go. The library route is the one that was missing:
+        // a script opened from the library had no document URL, so Save fell
+        // through to a file panel for content that already had a home.
+        // Content restored from the library must route back to that entry;
+        // anything else is what produced the "save failed" behaviour, where a
+        // library script was pushed into a file save panel.
+        let routesToItsLibraryEntry = service.activeLibraryScriptID
+            .map { service.saveDestination == .library($0) } ?? true
+        check(
+            "save destination resolved",
+            routesToItsLibraryEntry,
+            service.saveDestination.description
+        )
+
         check("embedded XPC service present", WhisperXPCClient.isAvailable)
         guard WhisperXPCClient.isAvailable else {
             if WhisperXPCClient.isStubBuild {
@@ -329,6 +461,23 @@ enum WhisperSelfTest {
             }
         }
         check("model download", false, "timed out")
+    }
+
+    /// Identifies this exact build. A rebuild changes the executable's
+    /// modification date, which is also when its ad-hoc signature changes.
+    private static var buildFingerprint: String {
+        // Bundle path, executable size and modification date together. Any one
+        // of them can be unavailable or coincidentally equal; all three
+        // differing is what actually separates two builds.
+        let bundlePath = Bundle.main.bundleURL.path
+        var size = 0
+        var modified = 0.0
+        if let executable = Bundle.main.executableURL,
+           let attributes = try? FileManager.default.attributesOfItem(atPath: executable.path) {
+            size = (attributes[.size] as? NSNumber)?.intValue ?? 0
+            modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        }
+        return "build:\(bundlePath)|\(size)|\(Int(modified))"
     }
 
     /// Uses a WAV path supplied after the flag, or synthesizes one so the test

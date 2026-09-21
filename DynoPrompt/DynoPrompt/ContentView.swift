@@ -605,7 +605,11 @@ Happy presenting! [wave]
                     service.currentPageIndex = 0
                     service.readPages.removeAll()
                     service.currentFileURL = nil
+                    // The service owns provenance because it owns the quit
+                    // flow; the library model mirrors it for its own UI.
+                    service.activeLibraryScriptID = script.id
                     library.activeScriptID = script.id
+                    service.rememberSavedEditorState()
                 },
                 onNew: {
                     guard service.confirmDiscardIfNeeded() else { return }
@@ -614,7 +618,9 @@ Happy presenting! [wave]
                     service.currentPageIndex = 0
                     service.readPages.removeAll()
                     service.currentFileURL = nil
+                    service.activeLibraryScriptID = nil
                     library.activeScriptID = nil
+                    service.rememberSavedEditorState()
                 }
             )
         }
@@ -636,8 +642,11 @@ Happy presenting! [wave]
             showLibrary = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .saveToLibrary)) { _ in
-            library.save(pages: service.pages)
-            service.savedPages = service.pages
+            // Routed through the service so this and the save-on-quit prompt
+            // cannot drift apart.
+            service.saveToLibrary()
+            library.activeScriptID = service.activeLibraryScriptID
+            library.reload()
         }
         .onReceive(NotificationCenter.default.publisher(for: .openAbout)) { _ in
             showAbout = true
@@ -819,10 +828,14 @@ Happy presenting! [wave]
                 let notes = try PresentationNotesExtractor.extractNotes(from: url)
                 DispatchQueue.main.async {
                     service.pages = notes
-                    service.savedPages = notes
+                    // A presentation import is editable source material, not
+                    // a durable DynoPrompt save target.
+                    service.savedPages = []
                     service.currentPageIndex = 0
                     service.readPages.removeAll()
                     service.currentFileURL = nil
+                    service.activeLibraryScriptID = nil
+                    library.activeScriptID = nil
                     service.rememberDocumentURL(url)
                     isImporting = false
                 }

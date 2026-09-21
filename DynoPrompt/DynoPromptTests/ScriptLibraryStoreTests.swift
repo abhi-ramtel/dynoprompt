@@ -149,3 +149,163 @@ final class ScriptLibraryStoreTests: XCTestCase {
         XCTAssertEqual(Script.derivedTitle(fromPages: ["", "   \n  "]), "Untitled Script")
     }
 }
+
+final class SavedEditorStateStoreTests: XCTestCase {
+    private var directory: URL!
+    private var fileURL: URL!
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DynoPromptEditorStateTests-\(UUID().uuidString)", isDirectory: true)
+        fileURL = directory.appendingPathComponent("LastSavedEditorState.json")
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: directory)
+        try super.tearDownWithError()
+    }
+
+    func testSavedPagesSurviveStoreRecreation() throws {
+        let pages = ["Opening line", "Second page"]
+        try SavedEditorStateStore(fileURL: fileURL).save(pages: pages)
+
+        let relaunchedStore = SavedEditorStateStore(fileURL: fileURL)
+        XCTAssertEqual(relaunchedStore.load()?.pages, pages)
+    }
+
+    func testCorruptStateDoesNotReplaceLaunchContent() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try "not json".write(to: fileURL, atomically: true, encoding: .utf8)
+
+        XCTAssertNil(SavedEditorStateStore(fileURL: fileURL).load())
+    }
+
+    // MARK: - Provenance
+
+    /// Restoring the pages alone leaves the editor unable to tell where the
+    /// content came from, so Save falls back to asking for a new location and
+    /// Save to Library creates a duplicate. The library entry has to survive
+    /// the relaunch with the pages.
+    func testLibraryProvenanceSurvivesRelaunch() throws {
+        let scriptID = UUID()
+        try SavedEditorStateStore(fileURL: fileURL).save(
+            SavedEditorState(
+                pages: ["Opening line"],
+                currentPageIndex: 0,
+                libraryScriptID: scriptID
+            )
+        )
+
+        let restored = SavedEditorStateStore(fileURL: fileURL).load()
+        XCTAssertEqual(restored?.libraryScriptID, scriptID)
+    }
+
+    func testCurrentPageSurvivesRelaunch() throws {
+        try SavedEditorStateStore(fileURL: fileURL).save(
+            SavedEditorState(pages: ["one", "two", "three"], currentPageIndex: 2)
+        )
+        XCTAssertEqual(SavedEditorStateStore(fileURL: fileURL).load()?.currentPageIndex, 2)
+    }
+
+    /// A page index from a previous launch can point past the end if the
+    /// script shrank. Clamping keeps the restored editor on a real page.
+    func testOutOfRangePageIndexIsClamped() throws {
+        try SavedEditorStateStore(fileURL: fileURL).save(
+            SavedEditorState(pages: ["only page"], currentPageIndex: 9)
+        )
+        XCTAssertEqual(SavedEditorStateStore(fileURL: fileURL).load()?.currentPageIndex, 0)
+    }
+
+    /// State written by the previous build stored only `pages`. It must still
+    /// load rather than being treated as corrupt and thrown away.
+    func testStateWrittenBeforeProvenanceExistedStillLoads() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try #"{"pages":["Legacy content"]}"#.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        let restored = SavedEditorStateStore(fileURL: fileURL).load()
+        XCTAssertEqual(restored?.pages, ["Legacy content"])
+        XCTAssertEqual(restored?.currentPageIndex, 0)
+        XCTAssertNil(restored?.libraryScriptID)
+    }
+
+    func testEmptyPagesAreNotRecorded() throws {
+        try SavedEditorStateStore(fileURL: fileURL).save(SavedEditorState(pages: []))
+        XCTAssertNil(SavedEditorStateStore(fileURL: fileURL).load())
+    }
+}
+
+// MARK: - Document bookmarks
+
+/// The document half of provenance. A plain path cannot be written to after a
+/// relaunch in the sandboxed build, because the access the save panel granted
+/// ends with that launch — only a bookmark carries it forward.
+final class SavedDocumentReferenceTests: XCTestCase {
+
+    private var directory: URL!
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DynoPromptBookmarkTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: directory)
+        try super.tearDownWithError()
+    }
+
+    func testBookmarkRoundTripsToTheSameFile() throws {
+        let document = directory.appendingPathComponent("script.dynoprompt")
+        try #"["page one"]"#.write(to: document, atomically: true, encoding: .utf8)
+
+        let bookmark = try XCTUnwrap(SavedDocumentReference.bookmark(for: document))
+        let resolved = try XCTUnwrap(SavedDocumentReference.resolve(bookmark))
+
+        XCTAssertEqual(
+            resolved.url.resolvingSymlinksInPath().standardizedFileURL,
+            document.resolvingSymlinksInPath().standardizedFileURL
+        )
+    }
+
+    /// Holding the scope must not stop ordinary reads and writes from working,
+    /// including outside the sandbox where there is no scope to acquire.
+    func testWritesSucceedWhileHoldingScope() throws {
+        let document = directory.appendingPathComponent("script.dynoprompt")
+        try #"["before"]"#.write(to: document, atomically: true, encoding: .utf8)
+
+        let bookmark = try XCTUnwrap(SavedDocumentReference.bookmark(for: document))
+        let resolved = try XCTUnwrap(SavedDocumentReference.resolve(bookmark))
+
+        try SavedDocumentReference.withAccess(to: resolved.url) {
+            try Data(#"["after"]"#.utf8).write(to: resolved.url, options: .atomic)
+        }
+
+        let readBack = try SavedDocumentReference.withAccess(to: resolved.url) {
+            try String(contentsOf: resolved.url, encoding: .utf8)
+        }
+        XCTAssertEqual(readBack, #"["after"]"#)
+    }
+
+    /// A deleted document must not resolve to a phantom URL the editor would
+    /// then try to save over.
+    func testDeletedDocumentDoesNotResolve() throws {
+        let document = directory.appendingPathComponent("gone.dynoprompt")
+        try #"["page"]"#.write(to: document, atomically: true, encoding: .utf8)
+        let bookmark = try XCTUnwrap(SavedDocumentReference.bookmark(for: document))
+        try FileManager.default.removeItem(at: document)
+
+        let resolved = SavedDocumentReference.resolve(bookmark)
+        if let resolved {
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: resolved.url.path),
+                "a resolved URL for a deleted file must not appear usable"
+            )
+        }
+    }
+
+    func testGarbageBookmarkIsRejected() {
+        XCTAssertNil(SavedDocumentReference.resolve(Data([0x00, 0x01, 0x02, 0x03])))
+    }
+}
